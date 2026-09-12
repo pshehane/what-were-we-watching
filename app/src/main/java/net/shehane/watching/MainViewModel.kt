@@ -343,7 +343,40 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var guessJob: Job? = null
     private var guessedFrom: Int? = null
 
-    fun suggestions(): Suggest.Result = Suggest.build(library.value, _seated.value)
+    /**
+     * Takes the availability map rather than reading the flow, so the screen's
+     * dependency on it is visible to Compose. Read behind a call the list would
+     * never redraw when a lookup landed.
+     */
+    fun suggestions(
+        availability: Map<String, Map<String, Tmdb.Availability>> = _availability.value,
+    ): Suggest.Result {
+        val home = library.value.homeCountry
+        val here = availability.mapNotNull { (showId, byCountry) ->
+            byCountry[home]?.let { showId to it }
+        }.toMap()
+        return Suggest.build(library.value, _seated.value, here)
+    }
+
+    /**
+     * The availability half of [loadTravel], without the popular list.
+     *
+     * The Ideas tab needs it so a wishlist entry you never filed under a service
+     * can still be offered: TMDB knows where it is even when you never said.
+     */
+    fun loadAvailability() {
+        val missing = wishlist().filter { it.tmdbId != null && _availability.value[it.id] == null }
+        if (missing.isEmpty()) return
+        viewModelScope.launch {
+            for (show in missing) {
+                val id = show.tmdbId ?: continue
+                runCatching { Tmdb.availabilityEverywhere(id) }
+                    // Merged one at a time against the current value, not a snapshot
+                    // taken before the loop, so a concurrent load cannot drop entries.
+                    .onSuccess { _availability.value = _availability.value + (show.id to it) }
+            }
+        }
+    }
 
     /**
      * Asks TMDB what sits next to the seed show. Only re-asks when the seed itself
@@ -415,6 +448,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val next = _guesses.value.toMutableList()
         next.add(at.coerceIn(0, next.size), item)
         _guesses.value = next
+    }
+
+    /**
+     * Set or change the verdict on a show already in the library, from its own
+     * screen. Passing null clears it back to "nobody has said", which is not the
+     * same as a no and must stay reachable.
+     */
+    fun setVerdict(showId: String, loved: Boolean?) {
+        if (loved == null) store.clearVerdict(showId) else store.vote(showId, loved)
+        pushSoon()
     }
 
     /** Tapping a tile that already carries a verdict takes the verdict back. */
@@ -561,11 +604,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _travelLoading.value = true
             if (force) _availability.value = emptyMap()
 
-            val found = _availability.value.toMutableMap()
             for (show in missing) {
                 val id = show.tmdbId ?: continue
                 runCatching { Tmdb.availabilityEverywhere(id) }
-                    .onSuccess { found[show.id] = it; _availability.value = found.toMap() }
+                    .onSuccess { _availability.value = _availability.value + (show.id to it) }
             }
 
             _popularHere.value = emptyList()

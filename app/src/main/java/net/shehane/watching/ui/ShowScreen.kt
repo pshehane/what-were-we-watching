@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.shehane.watching.data.Clock
@@ -60,6 +61,7 @@ fun ShowScreen(
     onAbandon: () -> Unit,
     onFinish: () -> Unit,
     onReactivate: () -> Unit,
+    onVerdict: (Boolean?) -> Unit,
     onDelete: () -> Unit,
     insets: PaddingValues,
 ) {
@@ -444,9 +446,83 @@ fun ShowScreen(
                     }
                 }
 
+                // --- what we thought of it ---
+                // Only once it is done. Asking mid-season is asking too early, and
+                // the answer is what the suggestions are built from.
+                if (show.isFinished) {
+                    VGap(22.dp)
+                    SectionHeader("WHAT WE THOUGHT", Ink.Faint)
+                    VGap(11.dp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        VerdictButton(
+                            label = "Loved it",
+                            tint = Ink.Rust,
+                            chosen = show.isLoved,
+                            modifier = Modifier.weight(1f),
+                            // Tapping the one already chosen takes it back to no
+                            // opinion, which is not the same as the other answer.
+                            onClick = { onVerdict(if (show.isLoved) null else true) },
+                        ) { Draw.Heart(18.dp, if (show.isLoved) Ink.Ground else Ink.Rust, filled = show.isLoved) }
+
+                        VerdictButton(
+                            label = "Didn't love it",
+                            tint = Ink.Cool,
+                            chosen = show.isNotLoved,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onVerdict(if (show.isNotLoved) null else false) },
+                        ) { Draw.ThumbDown(18.dp, if (show.isNotLoved) Ink.Ground else Ink.Cool, filled = show.isNotLoved) }
+                    }
+                    VGap(9.dp)
+                    BasicText(
+                        when (show.liked) {
+                            true -> "Counted towards what gets suggested. Tap again to take it back."
+                            false -> "Counted against shows like it. Tap again to take it back."
+                            null -> "Nothing said yet, which is not the same as a no."
+                        },
+                        style = Type.Meta,
+                    )
+                }
+
                 VGap(28.dp + insets.calculateBottomPadding())
             }
         }
+    }
+}
+
+/** Like [ActionButton], but it holds a state: the chosen one fills in. */
+@Composable
+private fun VerdictButton(
+    label: String,
+    tint: Color,
+    chosen: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+) {
+    Row(
+        modifier = modifier
+            .height(48.dp)
+            .clip(RoundedCornerShape(13.dp))
+            .then(
+                if (chosen) Modifier.background(tint)
+                else Modifier.border(1.dp, tint.copy(alpha = 0.45f), RoundedCornerShape(13.dp))
+            )
+            .clickable(onClick = onClick),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        icon()
+        HGap(8.dp)
+        BasicText(
+            label,
+            style = Type.Meta.copy(
+                fontSize = 12.5.sp,
+                color = if (chosen) Ink.Ground else tint,
+                fontWeight = FontWeight.Bold,
+            ),
+            maxLines = 1,
+            overflow = Clip,
+        )
     }
 }
 

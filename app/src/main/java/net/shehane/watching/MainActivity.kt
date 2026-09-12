@@ -193,6 +193,7 @@ private fun App() {
                         onAbandon = { vm.abandon(show.id); vm.popScreen() },
                         onFinish = { vm.finish(show.id); vm.popScreen() },
                         onReactivate = { vm.reactivate(show.id) },
+                        onVerdict = { vm.setVerdict(show.id, it) },
                         onDelete = { vm.deleteShow(show.id) },
                         insets = insets,
                     )
@@ -261,11 +262,12 @@ private fun App() {
                 // were about to answer. A new seed is picked up when the list runs
                 // out, and when you come back to the tab.
                 LaunchedEffect(guesses.isEmpty()) { vm.loadGuesses() }
+                LaunchedEffect(Unit) { vm.loadAvailability() }
                 SuggestScreen(
                     library = library,
                     seatedPeople = library.people.filter { it.id in seated },
                     seatedNames = Couch.nameList(library, seated.toList()),
-                    result = vm.suggestions(),
+                    result = vm.suggestions(availability),
                     guesses = guesses,
                     guessLoading = guessLoading,
                     onStart = vm::startWatching,

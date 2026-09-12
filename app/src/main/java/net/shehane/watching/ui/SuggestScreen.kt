@@ -114,7 +114,7 @@ fun SuggestScreen(
                     SectionHeader("READY TONIGHT · ${result.ready.size}", Ink.Amber)
                     VGap(7.dp)
                     BasicText(
-                        "On your wishlist, on a service you pay for.",
+                        "On your wishlist, and there is somewhere to watch it tonight.",
                         style = Type.Meta,
                     )
                     VGap(10.dp)
@@ -218,11 +218,21 @@ private fun ReadyCard(
         Column(Modifier.weight(1f)) {
             BasicText(show.title, style = Type.ShowTitleSm, maxLines = 2, overflow = Clip)
             VGap(5.dp)
-            library.serviceOrNull(show.serviceId)?.let { service ->
+            val service = library.serviceOrNull(show.serviceId)
+            if (service != null) {
                 ServiceProfileBadge(
                     service,
                     library.profileOrNull(show.serviceId, show.profileId),
                     small = true,
+                )
+            } else if (ready.via.isNotEmpty()) {
+                // You never filed this one, so say where TMDB found it instead of
+                // showing a blank where the badge would be.
+                BasicText(
+                    ready.via.take(2).joinToString(", "),
+                    style = Type.BodyTight.copy(color = Ink.Cool),
+                    maxLines = 1,
+                    overflow = Clip,
                 )
             }
             VGap(4.dp)

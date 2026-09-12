@@ -71,9 +71,52 @@ class SuggestTest {
     }
 
     @Test
-    fun `a wishlist show on no service is not an answer to what should we watch`() {
+    fun `a wishlist show on no service falls back to where TMDB says it is`() {
+        val lib = library(show("1", "Silo", state = Show.STATE_WISHLIST, serviceId = null))
+        val here = mapOf("1" to Tmdb.Availability(listOf("Apple TV+"), emptyList(), null))
+        val result = Suggest.build(lib, setOf("me"), here)
+
+        assertEquals(1, result.ready.size)
+        assertEquals(listOf("Apple TV+"), result.ready[0].via)
+    }
+
+    @Test
+    fun `without a service and without a lookup there is nothing to offer`() {
         val lib = library(show("1", "Silo", state = Show.STATE_WISHLIST, serviceId = null))
         assertTrue(Suggest.build(lib, setOf("me")).ready.isEmpty())
+    }
+
+    @Test
+    fun `rent or buy is not ready tonight, because you do not own it yet`() {
+        val lib = library(show("1", "Silo", state = Show.STATE_WISHLIST, serviceId = null))
+        val here = mapOf("1" to Tmdb.Availability(emptyList(), listOf("Apple TV"), null))
+        assertTrue(Suggest.build(lib, setOf("me"), here).ready.isEmpty())
+    }
+
+    @Test
+    fun `a show you filed under a service needs no lookup and names no provider`() {
+        val lib = library(show("1", "Silo", state = Show.STATE_WISHLIST))
+        val result = Suggest.build(lib, setOf("me"))
+
+        assertEquals(1, result.ready.size)
+        assertTrue(result.ready[0].via.isEmpty())
+    }
+
+    @Test
+    fun `one subscription listed as several tiers is named once`() {
+        assertEquals(
+            listOf("Peacock Premium"),
+            Suggest.collapseTiers(listOf("Peacock Premium", "Peacock Premium Plus")),
+        )
+        assertEquals(
+            listOf("Hulu"),
+            Suggest.collapseTiers(listOf("Hulu (With Ads)", "Hulu")),
+        )
+        // Two genuinely different services both survive.
+        assertEquals(
+            listOf("Hulu", "Netflix"),
+            Suggest.collapseTiers(listOf("Netflix", "Hulu")).sorted(),
+        )
     }
 
     @Test

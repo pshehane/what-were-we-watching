@@ -223,6 +223,12 @@ class LibraryStore(private val context: Context) {
     }
 
     /**
+     * Back to no opinion. The show stays finished: you are taking back what you
+     * thought of it, not claiming you never watched it.
+     */
+    fun clearVerdict(id: String) = updateShow(id) { it.copy(liked = null) }
+
+    /**
      * Put a record back exactly as it was. Undo needs this: a vote overwrites
      * state, the verdict and possibly the watched date at once, so restoring the
      * whole record is the only way to be sure nothing is left behind.

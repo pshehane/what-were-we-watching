@@ -51,7 +51,8 @@ fun WishlistScreen(
     wishlist: List<Show>,
     viewingCountry: String,
     countries: List<Tmdb.Country>,
-    availability: Map<String, Tmdb.Availability>,
+    availability: Map<String, Map<String, Tmdb.Availability>>,
+    watchableIn: (String) -> List<String>,
     popularHere: List<Tmdb.SearchItem>,
     loading: Boolean,
     picking: Boolean,
@@ -243,7 +244,12 @@ fun WishlistScreen(
                             library = library,
                             show = show,
                             away = away,
-                            availability = availability[show.id],
+                            viewingCountry = viewingCountry,
+                            byCountry = availability[show.id],
+                            countryName = { code ->
+                                countries.firstOrNull { it.code == code }?.name ?: code
+                            },
+                            watchableIn = watchableIn(show.id),
                             loading = loading && availability[show.id] == null,
                             onOpen = { onOpenShow(show.id) },
                             onStart = { onStartWatching(show.id) },
@@ -289,7 +295,10 @@ private fun WishRow(
     library: Library,
     show: Show,
     away: Boolean,
-    availability: Tmdb.Availability?,
+    viewingCountry: String,
+    byCountry: Map<String, Tmdb.Availability>?,
+    countryName: (String) -> String,
+    watchableIn: List<String>,
     loading: Boolean,
     onOpen: () -> Unit,
     onStart: () -> Unit,
@@ -321,35 +330,75 @@ private fun WishRow(
                     }
                 }
                 VGap(5.dp)
-                if (!away) {
-                    // At home the interesting fact is where it lives, if known.
-                    val service = library.serviceOrNull(show.serviceId)
-                    if (service != null) {
-                        ServiceProfileBadge(service, library.profileOrNull(show.serviceId, show.profileId), small = true)
-                    } else {
-                        BasicText("not started", style = Type.Meta)
+
+                val here = byCountry?.get(viewingCountry)
+                val elsewhere = watchableIn.filter { it != viewingCountry }
+
+                when {
+                    loading && byCountry == null ->
+                        BasicText("checking\u2026", style = Type.Meta)
+
+                    byCountry == null ->
+                        BasicText("could not check", style = Type.Meta)
+
+                    // Watchable where you are. At home that is the ordinary case,
+                    // so it gets no flag and no colour: just where it lives.
+                    here?.isStreamable == true -> {
+                        val service = library.serviceOrNull(show.serviceId)
+                        if (!away && service != null) {
+                            ServiceProfileBadge(
+                                service,
+                                library.profileOrNull(show.serviceId, show.profileId),
+                                small = true,
+                            )
+                        } else {
+                            BasicText(
+                                here.included.joinToString(", "),
+                                style = Type.Meta.copy(
+                                    color = if (away) Ink.Cool else Ink.Muted,
+                                    fontSize = 11.5.sp,
+                                ),
+                                maxLines = 2,
+                                overflow = Clip,
+                            )
+                        }
                     }
-                } else {
-                    when {
-                        loading -> BasicText("checking…", style = Type.Meta)
-                        availability == null -> BasicText("could not check", style = Type.Meta)
-                        availability.isStreamable -> BasicText(
-                            availability.included.joinToString(", "),
-                            style = Type.Meta.copy(color = Ink.Cool, fontSize = 11.5.sp),
+
+                    // Not on a subscription where you are, but it exists somewhere.
+                    // Naming those places is the point: "no" on its own is useless.
+                    elsewhere.isNotEmpty() -> Column {
+                        BasicText(
+                            "Not in " + countryName(viewingCountry),
+                            style = Type.Meta.copy(color = Ink.Amber, fontSize = 11.5.sp),
+                            maxLines = 1,
+                            overflow = Clip,
+                        )
+                        VGap(3.dp)
+                        BasicText(
+                            buildString {
+                                append(elsewhere.take(3).joinToString(", ") { countryName(it) })
+                                val rest = elsewhere.size - 3
+                                if (rest > 0) append(" +" + rest + " more")
+                            },
+                            style = Type.Meta.copy(color = Ink.Cool, fontSize = 11.sp),
                             maxLines = 2,
                             overflow = Clip,
                         )
-                        availability.rentOrBuy.isNotEmpty() -> BasicText(
-                            "rent or buy only · ${availability.rentOrBuy.take(2).joinToString(", ")}",
-                            style = Type.Meta,
-                            maxLines = 2,
-                            overflow = Clip,
-                        )
-                        else -> BasicText(
-                            "not available here",
-                            style = Type.Meta.copy(color = Ink.Rust),
-                        )
                     }
+
+                    here?.rentOrBuy?.isNotEmpty() == true -> BasicText(
+                        "rent or buy only \u00b7 " + here.rentOrBuy.take(2).joinToString(", "),
+                        style = Type.Meta.copy(color = Ink.Amber),
+                        maxLines = 2,
+                        overflow = Clip,
+                    )
+
+                    else -> BasicText(
+                        "Not on any subscription, anywhere",
+                        style = Type.Meta.copy(color = Ink.Rust),
+                        maxLines = 2,
+                        overflow = Clip,
+                    )
                 }
             }
             HGap(8.dp)

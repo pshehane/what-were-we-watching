@@ -209,6 +209,7 @@ private fun App() {
                     viewingCountry = viewingCountry,
                     countries = countries,
                     availability = availability,
+                    watchableIn = vm::watchableIn,
                     popularHere = popularHere,
                     loading = travelLoading,
                     picking = countryPickerOpen,

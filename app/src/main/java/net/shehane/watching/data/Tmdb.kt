@@ -175,21 +175,33 @@ object Tmdb {
         val isAnywhere: Boolean get() = included.isNotEmpty() || rentOrBuy.isNotEmpty()
     }
 
-    suspend fun availability(tmdbId: Int, region: String): Availability {
+    /**
+     * Every country at once, keyed by ISO code.
+     *
+     * The endpoint returns the whole world in one response - often a hundred-odd
+     * countries - so asking for one country and discarding the rest meant a fresh
+     * call every time the country changed, and no way to answer "well, where IS
+     * it available then?". One fetch per show now serves both questions.
+     */
+    suspend fun availabilityEverywhere(tmdbId: Int): Map<String, Availability> {
         val body = Http.getString(withKey("$BASE/tv/$tmdbId/watch/providers"), authHeaders())
-        val forRegion = json.parseToJsonElement(body).jsonObject["results"]?.jsonObject?.get(region)?.jsonObject
-            ?: return Availability(emptyList(), emptyList(), null)
+        val results = json.parseToJsonElement(body).jsonObject["results"]?.jsonObject
+            ?: return emptyMap()
 
-        fun names(key: String): List<String> {
-            val arr = forRegion[key] as? kotlinx.serialization.json.JsonArray ?: return emptyList()
-            return arr.mapNotNull { (it as? JsonObject)?.get("provider_name")?.jsonPrimitive?.contentOrNull }
-        }
+        return results.mapNotNull { (code, value) ->
+            val forRegion = value as? JsonObject ?: return@mapNotNull null
 
-        return Availability(
-            included = (names("flatrate") + names("free") + names("ads")).distinct(),
-            rentOrBuy = (names("rent") + names("buy")).distinct(),
-            link = forRegion["link"]?.jsonPrimitive?.contentOrNull,
-        )
+            fun names(key: String): List<String> {
+                val arr = forRegion[key] as? kotlinx.serialization.json.JsonArray ?: return emptyList()
+                return arr.mapNotNull { (it as? JsonObject)?.get("provider_name")?.jsonPrimitive?.contentOrNull }
+            }
+
+            code to Availability(
+                included = (names("flatrate") + names("free") + names("ads")).distinct(),
+                rentOrBuy = (names("rent") + names("buy")).distinct(),
+                link = forRegion["link"]?.jsonPrimitive?.contentOrNull,
+            )
+        }.toMap()
     }
 
     /**

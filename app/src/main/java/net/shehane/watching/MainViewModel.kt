@@ -103,9 +103,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _countries = MutableStateFlow<List<Tmdb.Country>>(emptyList())
     val countries: StateFlow<List<Tmdb.Country>> = _countries.asStateFlow()
 
-    /** Availability per show id, for whichever country is being viewed. */
-    private val _availability = MutableStateFlow<Map<String, Tmdb.Availability>>(emptyMap())
-    val availability: StateFlow<Map<String, Tmdb.Availability>> = _availability.asStateFlow()
+    /** show id -> country code -> what it costs there. Fetched once per show. */
+    private val _availability =
+        MutableStateFlow<Map<String, Map<String, Tmdb.Availability>>>(emptyMap())
+    val availability: StateFlow<Map<String, Map<String, Tmdb.Availability>>> =
+        _availability.asStateFlow()
 
     private val _popularHere = MutableStateFlow<List<Tmdb.SearchItem>>(emptyList())
     val popularHere: StateFlow<List<Tmdb.SearchItem>> = _popularHere.asStateFlow()
@@ -308,6 +310,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _countryPickerOpen.value = false
         if (_viewingCountry.value == code) return
         _viewingCountry.value = code
+        // Availability is already in memory for every country; only the local
+        // popular list depends on where you are looking.
         loadTravel()
     }
 
@@ -324,26 +328,53 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      * this size and it is the only honest way to get it: availability is per
      * country and changes, so it is never stored.
      */
-    fun loadTravel() {
-        travelJob?.cancel()
+    /**
+     * Where each wishlist show can be watched, everywhere, plus what is popular in
+     * the country being viewed.
+     *
+     * Availability is per show and not per country, so changing country re-reads
+     * what is already in memory instead of asking TMDB again. It is never stored
+     * on disk: rights change, and a saved answer would quietly become a lie.
+     */
+    fun loadTravel(force: Boolean = false) {
         val region = _viewingCountry.value
         val shows = wishlist().filter { it.tmdbId != null }
+        val missing = shows.filter { force || _availability.value[it.id] == null }
+
+        travelJob?.cancel()
         travelJob = viewModelScope.launch {
             _travelLoading.value = true
-            _availability.value = emptyMap()
-            _popularHere.value = emptyList()
+            if (force) _availability.value = emptyMap()
 
-            val found = mutableMapOf<String, Tmdb.Availability>()
-            for (show in shows) {
+            val found = _availability.value.toMutableMap()
+            for (show in missing) {
                 val id = show.tmdbId ?: continue
-                runCatching { Tmdb.availability(id, region) }
+                runCatching { Tmdb.availabilityEverywhere(id) }
                     .onSuccess { found[show.id] = it; _availability.value = found.toMap() }
             }
+
+            _popularHere.value = emptyList()
             runCatching { Tmdb.popularIn(region) }
                 .onSuccess { _popularHere.value = it.take(12) }
 
             _travelLoading.value = false
         }
+    }
+
+    /**
+     * The countries a show is included with a subscription in, most useful first.
+     *
+     * "Most useful" is a guess: markets that share a language with home, then
+     * everywhere else alphabetically. There is no signal in the data for which
+     * country you might actually get to, so this is a default, not a deduction.
+     */
+    fun watchableIn(showId: String): List<String> {
+        val byCountry = _availability.value[showId] ?: return emptyList()
+        val streamable = byCountry.filterValues { it.isStreamable }.keys
+        val preferred = listOf("US", "GB", "CA", "AU", "IE", "NZ")
+        return streamable.sortedWith(
+            compareBy({ preferred.indexOf(it).takeIf { i -> i >= 0 } ?: preferred.size }, { it })
+        )
     }
 
     // ---------------------------------------------------------------- search

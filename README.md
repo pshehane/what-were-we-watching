@@ -172,6 +172,9 @@ Titles, artwork, episode counts and streaming availability come from
 [The Movie Database](https://www.themoviedb.org/). Streaming availability is
 supplied to TMDB by JustWatch. Wikipedia links are resolved through Wikidata.
 
+The TMDB logo shown on the app's About screen is their own artwork, used for
+attribution only. See [`licenses/TMDB-logo.md`](licenses/TMDB-logo.md).
+
 Typefaces: [Instrument Serif](https://fonts.google.com/specimen/Instrument+Serif)
 and [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), both under
 the SIL Open Font Licence 1.1. Licence texts are in [`/licenses`](licenses).

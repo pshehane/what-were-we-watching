@@ -1,5 +1,6 @@
 package net.shehane.watching.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,17 +21,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.shehane.watching.BuildConfig
+import net.shehane.watching.R
 import net.shehane.watching.data.LibraryStore
 import net.shehane.watching.ui.theme.Ink
 import net.shehane.watching.ui.theme.Type
 
 /**
- * TMDB's terms require their attribution notice and logo to be shown. The logo is
- * a supplied asset we do not have yet, so the wording is here and the mark is an
- * open item rather than something invented.
+ * TMDB's terms require their attribution notice and their logo to be shown. Both
+ * are here. See licenses/TMDB-logo.md for where the artwork came from.
  */
 @Composable
 fun AboutScreen(
@@ -77,6 +79,15 @@ fun AboutScreen(
                     .padding(14.dp),
             ) {
                 Column {
+                    // TMDB's terms require their mark alongside the notice. The logo
+                    // is their supplied artwork, converted to a vector drawable
+                    // without altering it.
+                    Image(
+                        painter = painterResource(R.drawable.tmdb_logo),
+                        contentDescription = "The Movie Database",
+                        modifier = Modifier.height(20.dp),
+                    )
+                    VGap(14.dp)
                     BasicText(
                         "This product uses the TMDB API but is not endorsed or certified by TMDB.",
                         style = Type.BodyTight.copy(lineHeight = 19.sp, color = Ink.Text),
@@ -110,12 +121,6 @@ fun AboutScreen(
                     }
                 }
             }
-            VGap(8.dp)
-            BasicText(
-                "The TMDB logo still has to be added here. It is a supplied asset, so it is not " +
-                    "something to draw by hand.",
-                style = Type.Meta.copy(lineHeight = 16.sp),
-            )
 
             VGap(24.dp)
             SectionHeader("ARTICLE LINKS", Ink.Faint)

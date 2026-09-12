@@ -7,6 +7,10 @@
     {
       "id": "page-2",
       "name": "Other directions"
+    },
+    {
+      "id": "page-3",
+      "name": "Suggestions (3.0)"
     }
   ],
   "artboards": [
@@ -82,6 +86,42 @@
       "h": 844,
       "page": "page-2",
       "title": "Direction C · Board"
+    },
+    {
+      "file": "Suggestions.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3",
+      "title": "1 . Ideas"
+    },
+    {
+      "file": "WhyThis.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3",
+      "title": "2 . Why this one"
+    },
+    {
+      "file": "WhatItKnows.dc.html",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3",
+      "title": "3 . What it uses"
+    },
+    {
+      "file": "NotYet.dc.html",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3",
+      "title": "4 . Before it knows you"
     }
   ],
   "annotations": [
@@ -140,10 +180,42 @@
       "y": -180,
       "w": 860,
       "text": "Two other directions, deliberately left as rough sketches. Direction A is the one built out on the Screens page. Tell me which parts of B or C you want and I will fold them in."
+    },
+    {
+      "id": "n-sugg",
+      "page": "page-3",
+      "x": 0,
+      "y": -300,
+      "w": 390,
+      "text": "1 . Ideas\nThree sections, ordered by how much guessing each one does.\nReady tonight does none: it is your own wishlist, crossed with the services you pay for, filtered to the people on the couch. If this section has anything in it, the rest hardly matters.\nStalled does none either. It is your own started shows that have not moved, offered as a decision rather than a nudge.\nOnly the third section is a guess, and its heading names the show whose taste it borrowed."
+    },
+    {
+      "id": "n-why",
+      "page": "page-3",
+      "x": 470,
+      "y": -300,
+      "w": 390,
+      "text": "2 . Why this one\nEvery suggestion can be opened to see its reasoning, and the reasoning is in plain sentences citing shows by name.\nThe screen also argues against itself. If you shelved something similar, that is listed, because a suggestion you already rejected the shape of is worth knowing about before you commit three seasons.\nNot for us teaches it. Ask me later pushes it out ninety days."
+    },
+    {
+      "id": "n-knows",
+      "page": "page-3",
+      "x": 940,
+      "y": -300,
+      "w": 390,
+      "text": "3 . What it uses\nEach signal is named, counted, and switchable. The counts come from the real library, so the screen doubles as a summary of what you have recorded.\nThe second half says what it never reads. That list matters more than the first: the app has no login to any streaming service and cannot get one, which is exactly why its suggestions are worse than Netflix's and also why they are only about you.\nShows you dropped are kept, not forgotten, so you can undo a no."
+    },
+    {
+      "id": "n-notyet",
+      "page": "page-3",
+      "x": 1410,
+      "y": -300,
+      "w": 390,
+      "text": "4 . Before it knows you\nA new library has nothing to reason from, and the screen says so instead of inventing something.\nIt still fills the screen honestly. Ready tonight works from day one, because a wishlist entry plus a service you pay for needs no history at all. Popular on what you pay for is generic and labelled generic.\nThe counter gives a reason to mark old shows as finished, which is the fastest way to make the rest of this useful."
     }
   ],
   "launch": {
     "view": "canvas",
-    "page": "page-1"
+    "page": "page-3"
   }
 }

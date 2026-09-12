@@ -210,9 +210,14 @@ fun ShowScreen(
                             style = Type.BodyTight,
                         )
                         Spacer(Modifier.weight(1f))
+                        // On the last season there is nothing to roll into, so the
+                        // button offers the thing you actually mean instead of
+                        // inventing a season the show does not have.
+                        val onLastSeason = show.seasonCount != null &&
+                            show.position.season >= show.seasonCount
                         PillButton(
-                            text = "Finished S${show.position.season}",
-                            onClick = onFinishSeason,
+                            text = if (onLastSeason) "Finished it" else "Finished S${show.position.season}",
+                            onClick = if (onLastSeason) onFinish else onFinishSeason,
                             height = 34.dp,
                         )
                     }
@@ -220,8 +225,8 @@ fun ShowScreen(
                         VGap(8.dp)
                         BasicText(
                             listOfNotNull(
-                                show.seasonCount?.let { "$it seasons" },
-                                show.episodeCount?.let { "$it episodes" },
+                                show.seasonCount?.let { "$it season" + if (it == 1) "" else "s" },
+                                show.episodeCount?.let { "$it episode" + if (it == 1) "" else "s" },
                             ).joinToString(" · "),
                             style = Type.Meta,
                         )

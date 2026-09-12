@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,9 +49,18 @@ import net.shehane.watching.ui.theme.Ink
 import net.shehane.watching.ui.theme.Type
 import kotlin.math.roundToInt
 
-/** How far you drag before each demotion arms itself. */
-private const val SNOOZE_AT = -70f
-private const val SHELVE_AT = -150f
+/**
+ * How far you drag before each demotion arms itself, in dp.
+ *
+ * These were raw pixels, which meant the distance shrank as screen density rose:
+ * on a modern phone a short flick reached the second zone and shelved a show for
+ * good instead of snoozing it. They are converted through the screen density now,
+ * and they line up with the two 66dp zones of the rail, so the thing you have
+ * dragged onto is the thing that fires.
+ */
+private val SNOOZE_AT_DP = 66.dp
+private val SHELVE_AT_DP = 132.dp
+private val MAX_DRAG_DP = 150.dp
 
 @Composable
 fun CouchScreen(
@@ -112,6 +122,7 @@ fun CouchScreen(
                 items(result.primary, key = { it.show.id }) { match ->
                     Box(Modifier.padding(horizontal = 18.dp, vertical = 4.5.dp)) {
                         SwipeToDemote(
+                            showId = match.show.id,
                             onSnooze = { onSnooze(match.show.id) },
                             onAbandon = { onAbandon(match.show.id) },
                         ) {
@@ -130,6 +141,7 @@ fun CouchScreen(
                 items(result.secondary, key = { it.show.id }) { match ->
                     Box(Modifier.padding(horizontal = 18.dp, vertical = 4.dp)) {
                         SwipeToDemote(
+                            showId = match.show.id,
                             onSnooze = { onSnooze(match.show.id) },
                             onAbandon = { onAbandon(match.show.id) },
                         ) {
@@ -317,6 +329,10 @@ private fun PartialCard(library: Library, match: Couch.Match, onOpen: () -> Unit
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(13.dp))
+            // Opaque, even though this card reads as an outline: the swipe rail
+            // sits directly behind it, and without a fill the rail showed through
+            // a card nobody had touched.
+            .background(Ink.Ground)
             .border(1.dp, Ink.LineSoft, RoundedCornerShape(13.dp))
             .clickable(onClick = onOpen)
             .padding(horizontal = 10.dp, vertical = 7.dp),
@@ -429,15 +445,24 @@ private fun AbandonedRow(library: Library, show: Show, onOpen: () -> Unit) {
  */
 @Composable
 private fun SwipeToDemote(
+    showId: String,
     onSnooze: () -> Unit,
     onAbandon: () -> Unit,
     content: @Composable () -> Unit,
 ) {
-    var offset by remember { mutableFloatStateOf(0f) }
+    val density = LocalDensity.current
+    val snoozeAt = with(density) { -SNOOZE_AT_DP.toPx() }
+    val shelveAt = with(density) { -SHELVE_AT_DP.toPx() }
+    val maxDrag = with(density) { -MAX_DRAG_DP.toPx() }
+
+    // Keyed on the show. Without the key, demoting a card leaves its half-dragged
+    // offset behind in the slot, and whichever row moves up into that slot appears
+    // already swiped open.
+    var offset by remember(showId) { mutableFloatStateOf(0f) }
     val settled by animateFloatAsState(targetValue = offset, label = "swipe")
     val armed = when {
-        settled <= SHELVE_AT -> 2
-        settled <= SNOOZE_AT -> 1
+        settled <= shelveAt -> 2
+        settled <= snoozeAt -> 1
         else -> 0
     }
 
@@ -466,15 +491,15 @@ private fun SwipeToDemote(
                     detectHorizontalDragGestures(
                         onDragEnd = {
                             when {
-                                offset <= SHELVE_AT -> { onAbandon(); offset = 0f }
-                                offset <= SNOOZE_AT -> { onSnooze(); offset = 0f }
+                                offset <= shelveAt -> { onAbandon(); offset = 0f }
+                                offset <= snoozeAt -> { onSnooze(); offset = 0f }
                                 else -> offset = 0f
                             }
                         },
                         onDragCancel = { offset = 0f },
                     ) { _, delta ->
                         // Left only, and never further than the rail is wide.
-                        offset = (offset + delta).coerceIn(-190f, 0f)
+                        offset = (offset + delta).coerceIn(maxDrag, 0f)
                     }
                 },
         ) {

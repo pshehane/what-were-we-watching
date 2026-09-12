@@ -1,0 +1,169 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; }
+    .tile { width: 111px; }
+    .art { height: 162px; border-radius: 8px; position: relative; overflow: hidden; }
+    .blob { position: absolute; width: 62px; height: 62px; border-radius: 50%; left: 25px; top: 34px; }
+    .votes { position: absolute; left: 0; right: 0; bottom: 0; height: 31px; background: oklch(0.12 0.010 65 / 0.72); display: flex; align-items: center; justify-content: space-around; }
+    .cap { font-family: 'Instrument Serif', Georgia, serif; font-size: 13px; line-height: 1.12; padding-top: 6px; color: oklch(0.90 0.011 85); }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; overflow: hidden; position: relative; background: oklch(0.17 0.012 65); color: oklch(0.95 0.011 85); font-family: 'Space Grotesk', system-ui, sans-serif;">
+
+  <div style="height: 44px;"></div>
+
+  <div style="padding: 0 18px; display: flex; align-items: center; gap: 12px;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.95 0.011 85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+    <h1 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-size: 27px; font-weight: 400;">Have you seen these?</h1>
+  </div>
+
+  <div style="padding: 11px 18px 0; font-size: 12.5px; line-height: 1.55; color: oklch(0.68 0.011 85);">
+    Heart anything you have already watched. It goes straight into finished, so you do not have to pick a service or an episode for it.
+  </div>
+
+  <!-- the counter is the reason to keep tapping -->
+  <div style="padding: 14px 18px 0;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="flex-grow: 1; display: flex; gap: 4px;">
+        <div style="flex-grow: 1; height: 6px; border-radius: 3px; background: oklch(0.72 0.15 25);"></div>
+        <div style="flex-grow: 1; height: 6px; border-radius: 3px; background: oklch(0.72 0.15 25);"></div>
+        <div style="flex-grow: 1; height: 6px; border-radius: 3px; background: oklch(0.72 0.15 25);"></div>
+        <div style="flex-grow: 1; height: 6px; border-radius: 3px; background: oklch(0.72 0.15 25);"></div>
+        <div style="flex-grow: 1; height: 6px; border-radius: 3px; background: oklch(0.28 0.011 65);"></div>
+      </div>
+      <div style="font-size: 11.5px; color: oklch(0.62 0.010 75); flex-shrink: 0;">4 of 5</div>
+    </div>
+    <div style="font-size: 11px; color: oklch(0.55 0.010 75); padding-top: 7px;">One more and the suggestions start working. 2 thumbed down so far.</div>
+  </div>
+
+  <div style="padding: 16px 18px 0; display: flex; align-items: center; gap: 8px;">
+    <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; color: oklch(0.62 0.010 75);">POPULAR ON WHAT YOU PAY FOR</span>
+    <span style="flex-grow: 1; height: 1px; background: oklch(0.24 0.011 65);"></span>
+    <span style="font-size: 11px; color: oklch(0.78 0.12 235);">Change</span>
+  </div>
+
+  <div style="padding: 12px 18px 0; display: flex; flex-wrap: wrap; gap: 13px 10.5px;">
+
+    <!-- already hearted: the red border is the whole status, no extra label needed -->
+    <div class="tile">
+      <div class="art" style="background: oklch(0.28 0.04 160); box-shadow: 0 0 0 2px oklch(0.72 0.15 25);">
+        <div class="blob" style="background: oklch(0.68 0.11 155);"></div>
+        <div class="votes" style="justify-content: center;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="oklch(0.72 0.15 25)" stroke="oklch(0.72 0.15 25)" stroke-width="1.9" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        </div>
+      </div>
+      <div class="cap">The Diplomat</div>
+    </div>
+
+    <div class="tile">
+      <div class="art" style="background: oklch(0.28 0.04 290);">
+        <div class="blob" style="background: oklch(0.64 0.10 300);"></div>
+        <div class="votes">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+        </div>
+      </div>
+      <div class="cap">Andor</div>
+    </div>
+
+    <!-- thumbed down: it dims and stays put, so a mistap is obvious and reversible -->
+    <div class="tile" style="opacity: 0.42;">
+      <div class="art" style="background: oklch(0.30 0.04 60);">
+        <div class="blob" style="background: oklch(0.72 0.11 55);"></div>
+        <div class="votes" style="justify-content: center;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.78 0.12 235)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+        </div>
+      </div>
+      <div class="cap">Shrinking</div>
+    </div>
+
+    <div class="tile">
+      <div class="art" style="background: oklch(0.30 0.05 250);">
+        <div class="blob" style="background: oklch(0.72 0.11 240);"></div>
+        <div class="votes">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+        </div>
+      </div>
+      <div class="cap">Slow Horses</div>
+    </div>
+
+    <div class="tile">
+      <div class="art" style="background: oklch(0.26 0.04 20);">
+        <div class="blob" style="background: oklch(0.66 0.13 15);"></div>
+        <div class="votes">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+        </div>
+      </div>
+      <div class="cap">The Bear</div>
+    </div>
+
+    <div class="tile">
+      <div class="art" style="background: oklch(0.29 0.04 105);">
+        <div class="blob" style="background: oklch(0.74 0.12 100);"></div>
+        <div class="votes">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+        </div>
+      </div>
+      <div class="cap">Ted Lasso</div>
+    </div>
+
+    <div class="tile">
+      <div class="art" style="background: oklch(0.26 0.04 200);">
+        <div class="blob" style="background: oklch(0.66 0.10 195);"></div>
+        <div class="votes">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+        </div>
+      </div>
+      <div class="cap">Poker Face</div>
+    </div>
+
+    <div class="tile">
+      <div class="art" style="background: oklch(0.27 0.04 330);">
+        <div class="blob" style="background: oklch(0.66 0.11 325);"></div>
+        <div class="votes">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+        </div>
+      </div>
+      <div class="cap">Only Murders</div>
+    </div>
+
+    <div class="tile">
+      <div class="art" style="background: oklch(0.25 0.04 265);">
+        <div class="blob" style="background: oklch(0.62 0.11 260);"></div>
+        <div class="votes">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.92 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+        </div>
+      </div>
+      <div class="cap">Severance</div>
+    </div>
+
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 96px; background: linear-gradient(transparent, oklch(0.17 0.012 65) 42%); display: flex; align-items: flex-end; padding: 0 18px 22px;">
+    <div style="width: 100%; height: 46px; border-radius: 12px; background: oklch(0.80 0.14 72); color: oklch(0.17 0.012 65); font-size: 13.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;">Done for now</div>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

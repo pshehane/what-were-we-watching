@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
@@ -529,6 +530,86 @@ object Draw {
             }
             drawPath(box, colour, style = Stroke(s, cap = StrokeCap.Round))
             drawLine(colour, Offset(w * 0.41f, w * 0.55f), Offset(w * 0.59f, w * 0.55f), s, StrokeCap.Round)
+        }
+    }
+
+    /** Loved it. Filled when the verdict is in, outlined while it is still a question. */
+    @Composable
+    fun Heart(size: Dp = 18.dp, colour: Color = Ink.Rust, filled: Boolean = false) {
+        Canvas(Modifier.size(size)) {
+            val w = this.size.width
+            val path = Path().apply {
+                moveTo(w * 0.50f, w * 0.855f)
+                cubicTo(w * 0.50f, w * 0.855f, w * 0.115f, w * 0.610f, w * 0.115f, w * 0.372f)
+                cubicTo(w * 0.115f, w * 0.254f, w * 0.207f, w * 0.166f, w * 0.320f, w * 0.166f)
+                cubicTo(w * 0.400f, w * 0.166f, w * 0.463f, w * 0.212f, w * 0.50f, w * 0.271f)
+                cubicTo(w * 0.537f, w * 0.212f, w * 0.600f, w * 0.166f, w * 0.680f, w * 0.166f)
+                cubicTo(w * 0.793f, w * 0.166f, w * 0.885f, w * 0.254f, w * 0.885f, w * 0.372f)
+                cubicTo(w * 0.885f, w * 0.610f, w * 0.50f, w * 0.855f, w * 0.50f, w * 0.855f)
+                close()
+            }
+            if (filled) drawPath(path, colour)
+            else drawPath(path, colour, style = Stroke(w * 0.095f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        }
+    }
+
+    /**
+     * Didn't love it. A hand, upside down: the cuff is the small square, the palm
+     * is the block above it, and the thumb drops out of the bottom edge.
+     */
+    @Composable
+    fun ThumbDown(size: Dp = 18.dp, colour: Color = Ink.Cool, filled: Boolean = false) {
+        Canvas(Modifier.size(size)) {
+            val w = this.size.width
+            val s = w * 0.095f
+            val palm = Path().apply {
+                moveTo(w * 0.135f, w * 0.135f)
+                lineTo(w * 0.615f, w * 0.135f)
+                lineTo(w * 0.615f, w * 0.585f)
+                lineTo(w * 0.470f, w * 0.585f)
+                lineTo(w * 0.545f, w * 0.780f)
+                cubicTo(w * 0.575f, w * 0.858f, w * 0.505f, w * 0.925f, w * 0.437f, w * 0.888f)
+                cubicTo(w * 0.415f, w * 0.876f, w * 0.398f, w * 0.856f, w * 0.390f, w * 0.832f)
+                lineTo(w * 0.305f, w * 0.585f)
+                lineTo(w * 0.135f, w * 0.585f)
+                close()
+            }
+            val cuff = Path().apply {
+                moveTo(w * 0.700f, w * 0.135f)
+                lineTo(w * 0.880f, w * 0.135f)
+                lineTo(w * 0.880f, w * 0.585f)
+                lineTo(w * 0.700f, w * 0.585f)
+                close()
+            }
+            if (filled) {
+                drawPath(palm, colour)
+                drawPath(cuff, colour)
+            } else {
+                drawPath(palm, colour, style = Stroke(s, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                drawPath(cuff, colour, style = Stroke(s, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            }
+        }
+    }
+
+    /** The five-pointed star on the Ideas tab. */
+    @Composable
+    fun Star(size: Dp = 22.dp, colour: Color = Ink.Amber) {
+        Canvas(Modifier.size(size)) {
+            val w = this.size.width
+            val cx = w * 0.5f
+            val cy = w * 0.52f
+            val outer = w * 0.40f
+            val inner = w * 0.166f
+            val path = Path()
+            for (i in 0 until 10) {
+                val r = if (i % 2 == 0) outer else inner
+                val a = Math.toRadians(-90.0 + i * 36.0)
+                val x = cx + (r * Math.cos(a)).toFloat()
+                val y = cy + (r * Math.sin(a)).toFloat()
+                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+            }
+            path.close()
+            drawPath(path, colour, style = Stroke(w * 0.085f, cap = StrokeCap.Round, join = StrokeJoin.Round))
         }
     }
 

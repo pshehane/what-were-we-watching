@@ -63,6 +63,18 @@ object Tmdb {
         return json.decodeFromString(SearchResponse.serializer(), body).results
     }
 
+    /**
+     * What TMDB puts next to a show. This is the only guessing in the whole app,
+     * and it is worth being clear whose guess it is: we choose which show to ask
+     * about, they answer.
+     */
+    suspend fun recommendations(tmdbId: Int): List<SearchItem> {
+        if (!isConfigured) return emptyList()
+        val url = withKey("$BASE/tv/$tmdbId/recommendations?language=en-US&page=1")
+        val body = Http.getString(url, authHeaders())
+        return json.decodeFromString(SearchResponse.serializer(), body).results
+    }
+
     // ------------------------------------------------------------------ detail
 
     @Serializable
@@ -209,14 +221,58 @@ object Tmdb {
      * rather than the plain popular list, because "popular" with no region says
      * nothing about whether you could actually watch it where you are standing.
      */
-    suspend fun popularIn(region: String): List<SearchItem> {
+    suspend fun popularIn(region: String, providerIds: List<Int> = emptyList()): List<SearchItem> {
         if (!isConfigured) return emptyList()
+        val onlyMine =
+            if (providerIds.isEmpty()) ""
+            else "&with_watch_providers=" + providerIds.joinToString("|")
         val url = withKey(
             "$BASE/discover/tv?watch_region=$region&with_watch_monetization_types=flatrate" +
-                "&sort_by=popularity.desc&page=1&language=en-US"
+                onlyMine + "&sort_by=popularity.desc&page=1&language=en-US"
         )
         val body = Http.getString(url, authHeaders())
         return json.decodeFromString(SearchResponse.serializer(), body).results
+    }
+
+    @Serializable
+    private data class ProviderList(val results: List<ProviderRow> = emptyList())
+
+    @Serializable
+    private data class ProviderRow(
+        @SerialName("provider_id") val id: Int,
+        @SerialName("provider_name") val name: String = "",
+    )
+
+    private val providerCache = mutableMapOf<String, List<ProviderRow>>()
+
+    /**
+     * TMDB's ids for the services you actually pay for, matched by name the same
+     * way an added show is matched to a service.
+     *
+     * Without this the "popular" list is whatever is popular on any subscription
+     * in the country, which is not the same claim at all. An empty answer means we
+     * could not match anything, and the caller should say so rather than pretend.
+     */
+    suspend fun providerIdsFor(region: String, services: List<Service>): List<Int> {
+        if (!isConfigured || services.isEmpty()) return emptyList()
+        val rows = providerCache.getOrPut(region) {
+            runCatching {
+                val body = Http.getString(
+                    withKey("$BASE/watch/providers/tv?language=en-US&watch_region=$region"),
+                    authHeaders(),
+                )
+                json.decodeFromString(ProviderList.serializer(), body).results
+            }.getOrDefault(emptyList())
+        }
+        if (rows.isEmpty()) return emptyList()
+
+        return services.mapNotNull { service ->
+            val s = normalise(service.name)
+            rows.firstOrNull { row ->
+                val p = normalise(row.name)
+                p == s || p.startsWith(s) || s.startsWith(p)
+            }?.id
+        }.distinct()
     }
 
     // ------------------------------------------------------------- wikipedia

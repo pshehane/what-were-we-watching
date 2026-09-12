@@ -97,6 +97,14 @@ data class Show(
     @SerialName("watchedWith") val watchedWith: List<String> = emptyList(),
     val position: Position = Position(),
     val state: String = STATE_ACTIVE,
+    /**
+     * What we thought of it. Null means nobody has said, which is not the same as
+     * a no: most shows never get a verdict and must not be counted as disliked.
+     *
+     * Set by the two swipes on a suggestion. A show can be finished without one,
+     * and can carry one without ever having been on the couch.
+     */
+    val liked: Boolean? = null,
     /** ISO instant. Only meaningful while [state] is [STATE_SNOOZED]. */
     val snoozeUntil: String? = null,
     val lastWatchedAt: String? = null,
@@ -120,6 +128,10 @@ data class Show(
     val isWishlist: Boolean get() = state == STATE_WISHLIST
     /** Both sit below everything else, but they mean different things. */
     val isDone: Boolean get() = isAbandoned || isFinished
+
+    val isLoved: Boolean get() = liked == true
+    /** Seen and it did not land, or we are never going to. Either way, no more of these. */
+    val isNotLoved: Boolean get() = liked == false
 
     /** Everyone on the show, you included. The couch match runs against this. */
     fun watcherIds(meId: String): List<String> = listOf(meId) + watchedWith.filter { it != meId }

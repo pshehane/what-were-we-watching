@@ -13,12 +13,13 @@ import net.shehane.watching.data.Clock
 import net.shehane.watching.data.Couch
 import net.shehane.watching.data.DriveSync
 import net.shehane.watching.data.LibraryStore
+import net.shehane.watching.data.Suggest
 import net.shehane.watching.data.Tmdb
 import net.shehane.watching.model.Library
 import net.shehane.watching.model.Position
 import net.shehane.watching.model.Show
 
-/** Where you are in the app. Six screens do not need a navigation library. */
+/** Where you are in the app. Eight screens do not need a navigation library. */
 sealed interface Screen {
     data object Couch : Screen
     data object Search : Screen
@@ -26,7 +27,19 @@ sealed interface Screen {
     data object Profiles : Screen
     data object About : Screen
     data object Wishlist : Screen
+    data object Ideas : Screen
+    data object CatchUp : Screen
 }
+
+/**
+ * A message with a way out of it. Voting is one tap or one flick, and it files a
+ * show, so the message has to carry the undo rather than just announce what
+ * happened.
+ */
+data class Note(
+    val message: String,
+    val undo: (() -> Unit)? = null,
+)
 
 /** What the add sheet is holding while you decide. */
 data class Draft(
@@ -91,8 +104,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _syncState = MutableStateFlow<DriveSync.State>(DriveSync.State.SignedOut)
     val syncState: StateFlow<DriveSync.State> = _syncState.asStateFlow()
 
-    private val _toast = MutableStateFlow<String?>(null)
-    val toast: StateFlow<String?> = _toast.asStateFlow()
+    private val _toast = MutableStateFlow<Note?>(null)
+    val toast: StateFlow<Note?> = _toast.asStateFlow()
+
+    private fun say(message: String, undo: (() -> Unit)? = null) {
+        _toast.value = Note(message, undo)
+    }
 
     // --- wishlist and travelling ---
 
@@ -146,7 +163,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun go(target: Screen) {
         when (target) {
-            is Screen.Couch, is Screen.Wishlist -> {
+            is Screen.Couch, is Screen.Wishlist, is Screen.Ideas -> {
                 stack.clear()
                 stack.addLast(target)
             }
@@ -214,19 +231,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun snooze(showId: String) {
         store.snooze(showId)
-        _toast.value = "Not in the mood. Back in ${LibraryStore.SNOOZE_DAYS} days."
+        say("Not in the mood. Back in ${LibraryStore.SNOOZE_DAYS} days.")
         pushSoon()
     }
 
     fun abandon(showId: String) {
         store.abandon(showId)
-        _toast.value = "Moved to the shelf."
+        say("Moved to the shelf.")
         pushSoon()
     }
 
     fun finish(showId: String) {
         store.finish(showId)
-        _toast.value = "Marked finished."
+        say("Marked finished.")
         pushSoon()
     }
 
@@ -301,15 +318,164 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun toWishlist(showId: String) {
         store.toWishlist(showId)
-        _toast.value = "Parked on the wishlist."
+        say("Parked on the wishlist.")
         pushSoon()
     }
 
     fun startWatching(showId: String) {
         store.startWatching(showId)
-        _toast.value = "On the couch, from the start."
+        say("On the couch, from the start.")
         pushSoon()
     }
+
+    // ----------------------------------------------------------- suggestions
+
+    private val _guesses = MutableStateFlow<List<Tmdb.SearchItem>>(emptyList())
+    val guesses: StateFlow<List<Tmdb.SearchItem>> = _guesses.asStateFlow()
+
+    private val _guessLoading = MutableStateFlow(false)
+    val guessLoading: StateFlow<Boolean> = _guessLoading.asStateFlow()
+
+    /** What has been answered on the catch-up grid, so the tiles can show it. */
+    private val _verdicts = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
+    val verdicts: StateFlow<Map<Int, Boolean>> = _verdicts.asStateFlow()
+
+    private var guessJob: Job? = null
+    private var guessedFrom: Int? = null
+
+    fun suggestions(): Suggest.Result = Suggest.build(library.value, _seated.value)
+
+    /**
+     * Asks TMDB what sits next to the seed show. Only re-asks when the seed itself
+     * changes, so coming back to the tab does not spend a call to redraw the same
+     * list.
+     */
+    fun loadGuesses() {
+        val seed = suggestions().seed?.tmdbId ?: run { _guesses.value = emptyList(); return }
+        if (seed == guessedFrom && _guesses.value.isNotEmpty()) return
+
+        guessJob?.cancel()
+        guessedFrom = seed
+        guessJob = viewModelScope.launch {
+            _guessLoading.value = true
+            runCatching { Tmdb.recommendations(seed) }
+                .onSuccess { _guesses.value = Suggest.unseen(library.value, it).take(12) }
+                .onFailure { _guesses.value = emptyList() }
+            _guessLoading.value = false
+        }
+    }
+
+    /**
+     * A verdict on something not in the library yet. It is added as finished with
+     * the verdict attached, which is the whole point of the fast path: no service,
+     * no profile, no episode number.
+     */
+    fun vote(item: Tmdb.SearchItem, loved: Boolean) {
+        val id = store.addShow(
+            title = item.name,
+            tmdbId = item.id,
+            year = item.year,
+            posterPath = item.posterPath,
+            overview = item.overview,
+            serviceId = null,
+            profileId = null,
+            watchedWith = emptyList(),
+            state = Show.STATE_FINISHED,
+        )
+        store.vote(id, loved)
+
+        _guesses.value = _guesses.value.filterNot { it.id == item.id }
+        // The catch-up grid keeps the tile in place and marks it instead, so the
+        // list does not reflow under whichever finger is tapping down it.
+        _verdicts.value = _verdicts.value + (item.id to loved)
+
+        say(
+            if (loved) "${item.name} filed as watched and loved"
+            else "${item.name} filed as watched, not loved"
+        ) {
+            store.deleteShow(id)
+            _verdicts.value = _verdicts.value - item.id
+            // Put it back where it was rather than at the end of the list.
+            if (_guesses.value.none { it.id == item.id }) _guesses.value = _guesses.value + item
+            pushSoon()
+        }
+        pushSoon()
+    }
+
+    /** The same verdict, on a show the library already knows about. */
+    fun voteOnShow(showId: String, loved: Boolean) {
+        val before = library.value.showOrNull(showId) ?: return
+        store.vote(showId, loved)
+        say(
+            if (loved) "${before.title} filed as watched and loved"
+            else "${before.title} filed as watched, not loved"
+        ) {
+            store.restoreShow(before)
+            pushSoon()
+        }
+        pushSoon()
+    }
+
+    /**
+     * Straight onto the wishlist from a suggestion. No sheet: a suggestion already
+     * knows the title, and the service and profile are questions for the day you
+     * actually start it.
+     */
+    fun wishlistFromSuggestion(item: Tmdb.SearchItem) {
+        val id = store.addShow(
+            title = item.name,
+            tmdbId = item.id,
+            year = item.year,
+            posterPath = item.posterPath,
+            overview = item.overview,
+            serviceId = null,
+            profileId = null,
+            watchedWith = emptyList(),
+            state = Show.STATE_WISHLIST,
+        )
+        _guesses.value = _guesses.value.filterNot { it.id == item.id }
+        say("${item.name} is on the wishlist.") {
+            store.deleteShow(id)
+            if (_guesses.value.none { it.id == item.id }) _guesses.value = _guesses.value + item
+            pushSoon()
+        }
+        pushSoon()
+    }
+
+    private val _catchUp = MutableStateFlow<List<Tmdb.SearchItem>>(emptyList())
+    val catchUp: StateFlow<List<Tmdb.SearchItem>> = _catchUp.asStateFlow()
+
+    private val _catchUpLoading = MutableStateFlow(false)
+    val catchUpLoading: StateFlow<Boolean> = _catchUpLoading.asStateFlow()
+
+    /**
+     * The catch-up grid: what is popular at home, on the services you actually pay
+     * for, minus everything the library already knows about.
+     *
+     * The service filter is the part that makes the heading true. Without TMDB's
+     * ids for your own services this would be whatever is popular on any
+     * subscription in the country, which is a different claim; when nothing
+     * matches, the screen says so rather than quietly widening.
+     */
+    fun loadCatchUp() {
+        _verdicts.value = emptyMap()
+        if (_catchUp.value.isNotEmpty()) return
+
+        viewModelScope.launch {
+            _catchUpLoading.value = true
+            val lib = library.value
+            val ids = runCatching { Tmdb.providerIdsFor(lib.homeCountry, lib.services) }
+                .getOrDefault(emptyList())
+            runCatching { Tmdb.popularIn(lib.homeCountry, ids) }
+                .onSuccess { _catchUp.value = Suggest.unseen(library.value, it) }
+                .onFailure { _catchUp.value = emptyList() }
+            _catchUpLoading.value = false
+        }
+    }
+
+    /** Drops anything voted on since the screen opened, so the grid does not grow stale. */
+    fun catchUpCandidates(): List<Tmdb.SearchItem> =
+        Suggest.unseen(library.value, _catchUp.value)
 
     // ------------------------------------------------------------ travelling
 
@@ -534,9 +700,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         _draft.value = null
         clearQuery()
         _screen.value = if (toWishlist) Screen.Wishlist else Screen.Couch
-        _toast.value =
+        say(
             if (toWishlist) "${d.result.name} is on the wishlist."
             else "${d.result.name} is on the couch."
+        )
         pushSoon()
         // Silence the unused warning without losing the id, which the detail screen
         // would want if we ever jump straight there after adding.
@@ -555,7 +722,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         drive.onSignInResult(data)
             .onSuccess {
                 _syncState.value = drive.state()
-                _toast.value = "Connected to Drive."
+                say("Connected to Drive.")
                 syncNow()
             }
             .onFailure {
@@ -580,13 +747,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 .onSuccess { changed ->
                     _syncState.value = drive.state()
                     if (!quiet) {
-                        _toast.value =
-                            if (changed) "Drive had newer changes; merged." else "Drive is up to date."
+                        say(if (changed) "Drive had newer changes; merged." else "Drive is up to date.")
                     }
                 }
                 .onFailure {
                     _syncState.value = DriveSync.State.Failed(it.message ?: "Sync failed")
-                    if (!quiet) _toast.value = "Could not sync: ${it.message}"
+                    if (!quiet) say("Could not sync: ${it.message}")
                 }
         }
     }

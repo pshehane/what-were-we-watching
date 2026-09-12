@@ -15,7 +15,7 @@ object Csv {
 
     private val HEADER = listOf(
         "Title", "Year", "Service", "Profile", "Watched with",
-        "Season", "Episode", "Status", "Comes back",
+        "Season", "Episode", "Status", "Verdict", "Comes back",
         "Last watched", "Added", "TMDB id", "Wikipedia",
     )
 
@@ -57,6 +57,11 @@ object Csv {
             if (show.isWishlist) "" else show.position.season.toString(),
             if (show.isWishlist) "" else show.position.episode.toString(),
             show.state,
+            when (show.liked) {
+                true -> "loved"
+                false -> "did not love"
+                null -> ""
+            },
             if (show.isSnoozed) Clock.toCsvDate(show.snoozeUntil) else "",
             Clock.toCsvDate(show.lastWatchedAt),
             Clock.toCsvDate(show.addedAt),

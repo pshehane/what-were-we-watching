@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,9 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,11 +43,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import net.shehane.watching.ui.AboutScreen
 import net.shehane.watching.ui.AddScreen
 import net.shehane.watching.ui.AddSheet
+import net.shehane.watching.data.Couch
+import net.shehane.watching.ui.CatchUpScreen
 import net.shehane.watching.ui.CouchScreen
 import net.shehane.watching.ui.Draw
 import net.shehane.watching.ui.HGap
 import net.shehane.watching.ui.ProfilesScreen
 import net.shehane.watching.ui.ShowScreen
+import net.shehane.watching.ui.SuggestScreen
 import net.shehane.watching.ui.WishlistScreen
 import net.shehane.watching.ui.VGap
 import net.shehane.watching.ui.theme.Ink
@@ -86,6 +93,10 @@ private fun App() {
     val searchRegion by vm.searchRegion.collectAsStateWithLifecycle()
     val regionPickerOpen by vm.regionPickerOpen.collectAsStateWithLifecycle()
     val searchAvailability by vm.searchAvailability.collectAsStateWithLifecycle()
+    val guesses by vm.guesses.collectAsStateWithLifecycle()
+    val guessLoading by vm.guessLoading.collectAsStateWithLifecycle()
+    val verdicts by vm.verdicts.collectAsStateWithLifecycle()
+    val catchUpLoading by vm.catchUpLoading.collectAsStateWithLifecycle()
 
     val insets = WindowInsets.safeDrawing.asPaddingValues()
 
@@ -132,6 +143,7 @@ private fun App() {
                     insets = insets,
                     selected = Screen.Couch,
                     onCouch = { vm.go(Screen.Couch) },
+                    onIdeas = { vm.go(Screen.Ideas) },
                     onAdd = { vm.go(Screen.Search) },
                     onWishlist = { vm.go(Screen.Wishlist) },
                 )
@@ -237,8 +249,50 @@ private fun App() {
                     insets = insets,
                     selected = Screen.Wishlist,
                     onCouch = { vm.go(Screen.Couch) },
+                    onIdeas = { vm.go(Screen.Ideas) },
                     onAdd = { vm.go(Screen.Search) },
                     onWishlist = { vm.go(Screen.Wishlist) },
+                )
+            }
+
+            is Screen.Ideas -> {
+                LaunchedEffect(library) { vm.loadGuesses() }
+                SuggestScreen(
+                    library = library,
+                    seatedPeople = library.people.filter { it.id in seated },
+                    seatedNames = Couch.nameList(library, seated.toList()),
+                    result = vm.suggestions(),
+                    guesses = guesses,
+                    guessLoading = guessLoading,
+                    onStart = vm::startWatching,
+                    onOpenShow = { vm.go(Screen.ShowDetail(it)) },
+                    onPickUp = { vm.go(Screen.ShowDetail(it)) },
+                    onShelve = vm::abandon,
+                    onVote = vm::vote,
+                    onWishlist = vm::wishlistFromSuggestion,
+                    onCatchUp = { vm.go(Screen.CatchUp) },
+                    insets = insets,
+                )
+                BottomBar(
+                    insets = insets,
+                    selected = Screen.Ideas,
+                    onCouch = { vm.go(Screen.Couch) },
+                    onIdeas = { vm.go(Screen.Ideas) },
+                    onAdd = { vm.go(Screen.Search) },
+                    onWishlist = { vm.go(Screen.Wishlist) },
+                )
+            }
+
+            is Screen.CatchUp -> {
+                LaunchedEffect(Unit) { vm.loadCatchUp() }
+                CatchUpScreen(
+                    candidates = vm.catchUpCandidates(),
+                    loading = catchUpLoading,
+                    finishedCount = vm.suggestions().finishedCount,
+                    verdicts = verdicts,
+                    onVote = vm::vote,
+                    onBack = { vm.popScreen() },
+                    insets = insets,
                 )
             }
         }
@@ -256,8 +310,8 @@ private fun App() {
             )
         }
 
-        toast?.let { message ->
-            Toast(message, insets) { vm.consumeToast() }
+        toast?.let { note ->
+            Toast(note, insets) { vm.consumeToast() }
         }
     }
 }
@@ -281,6 +335,7 @@ private fun BottomBar(
     insets: PaddingValues,
     selected: Screen,
     onCouch: () -> Unit,
+    onIdeas: () -> Unit,
     onAdd: () -> Unit,
     onWishlist: () -> Unit,
 ) {
@@ -291,12 +346,17 @@ private fun BottomBar(
                 .background(Ink.SurfaceSunk)
                 .padding(bottom = insets.calculateBottomPadding())
                 .height(72.dp)
-                .padding(horizontal = 26.dp),
+                .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val onCouchTab = selected is Screen.Couch
             BarItem("Couch", selected = onCouchTab, onClick = onCouch) {
                 Draw.Couch(22.dp, if (onCouchTab) Ink.Amber else Ink.Faint)
+            }
+            Spacer(Modifier.weight(1f))
+            val onIdeasTab = selected is Screen.Ideas
+            BarItem("Ideas", selected = onIdeasTab, onClick = onIdeas) {
+                Draw.Star(22.dp, if (onIdeasTab) Ink.Amber else Ink.Faint)
             }
             Spacer(Modifier.weight(1f))
             Box(
@@ -345,26 +405,70 @@ private fun BarItem(
 
 /** A one-line confirmation that fades itself out. */
 @Composable
-private fun Toast(message: String, insets: PaddingValues, onDone: () -> Unit) {
-    LaunchedEffect(message) {
-        kotlinx.coroutines.delay(2600)
+private fun Toast(note: Note, insets: PaddingValues, onDone: () -> Unit) {
+    // Five seconds when there is something to take back, less when the message is
+    // only telling you what happened.
+    val span = if (note.undo != null) 5000L else 2600L
+    var left by remember(note) { mutableStateOf(1f) }
+
+    LaunchedEffect(note) {
+        val step = 50L
+        var spent = 0L
+        while (spent < span) {
+            kotlinx.coroutines.delay(step)
+            spent += step
+            left = 1f - spent.toFloat() / span
+        }
         onDone()
     }
+
     Box(
         Modifier
             .fillMaxSize()
-            .padding(bottom = 104.dp + insets.calculateBottomPadding(), start = 24.dp, end = 24.dp),
+            .padding(bottom = 96.dp + insets.calculateBottomPadding(), start = 14.dp, end = 14.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
-        Row(
+        Column(
             Modifier
-                .clip(RoundedCornerShape(12.dp))
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(13.dp))
                 .background(Ink.SurfaceLift)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .border(1.dp, Ink.Line, RoundedCornerShape(13.dp)),
         ) {
-            BasicText(message, style = Type.BodyTight.copy(color = Ink.Text))
-            HGap(4.dp)
+            Row(
+                Modifier.fillMaxWidth().padding(start = 15.dp, end = 6.dp, top = 11.dp, bottom = 11.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BasicText(
+                    note.message,
+                    style = Type.BodyTight.copy(color = Ink.Text),
+                    modifier = Modifier.weight(1f),
+                )
+                note.undo?.let { undo ->
+                    HGap(8.dp)
+                    Box(
+                        Modifier
+                            .clip(RoundedCornerShape(9.dp))
+                            .clickable { undo(); onDone() }
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                    ) {
+                        BasicText(
+                            "UNDO",
+                            style = Type.Eyebrow.copy(color = Ink.Amber, fontSize = 12.sp),
+                        )
+                    }
+                }
+            }
+            if (note.undo != null) {
+                Box(Modifier.fillMaxWidth().height(3.dp).background(Ink.Line)) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth(left.coerceIn(0f, 1f))
+                            .height(3.dp)
+                            .background(Ink.Amber)
+                    )
+                }
+            }
         }
     }
 }

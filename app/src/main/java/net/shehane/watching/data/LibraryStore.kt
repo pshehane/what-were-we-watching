@@ -205,6 +205,32 @@ class LibraryStore(private val context: Context) {
         it.copy(state = Show.STATE_FINISHED, snoozeUntil = null, lastWatchedAt = Clock.now())
     }
 
+    /**
+     * A verdict on a suggestion. Both answers file the show as finished, because
+     * both mean we are done with it: one of them is simply a compliment.
+     *
+     * This deliberately skips the add flow. Nobody is going to name a service, a
+     * profile and an episode number for something they watched in 2019, and
+     * demanding it would make the fast path useless.
+     */
+    fun vote(id: String, loved: Boolean) = updateShow(id) {
+        it.copy(
+            state = Show.STATE_FINISHED,
+            liked = loved,
+            snoozeUntil = null,
+            lastWatchedAt = it.lastWatchedAt ?: Clock.now(),
+        )
+    }
+
+    /**
+     * Put a record back exactly as it was. Undo needs this: a vote overwrites
+     * state, the verdict and possibly the watched date at once, so restoring the
+     * whole record is the only way to be sure nothing is left behind.
+     */
+    fun restoreShow(show: Show) = update { lib ->
+        lib.copy(shows = lib.shows.map { if (it.id == show.id) show else it })
+    }
+
     fun reactivate(id: String) = updateShow(id) {
         it.copy(state = Show.STATE_ACTIVE, snoozeUntil = null)
     }

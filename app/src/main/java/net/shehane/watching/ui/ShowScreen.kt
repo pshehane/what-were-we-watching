@@ -709,6 +709,9 @@ private fun Summarised(recapped: MainViewModel.Recapped?) {
         Summary.Fallback.NO_NETWORK -> "No network, so the phone wrote it."
         Summary.Fallback.NO_DEVICE_MODEL ->
             "The on-device summariser is not available on this phone."
+        Summary.Fallback.DEVICE_DOWNLOADING ->
+            "This phone is still fetching its model. The synopses are below in the " +
+                "meantime, and the next recap will be written here."
         Summary.Fallback.FAILED -> "The summariser did not answer."
         null -> null
     }

@@ -375,11 +375,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             if (deviceCapability == null) {
                 deviceCapability = OnDevice.capability(getApplication())
             }
+            // Fetch it in the background, but only once you have actually asked
+            // for the phone to do the writing. Nobody else should pay for it.
+            if (mode == Library.SUMMARY_DEVICE && deviceCapability?.needsDownload == true) {
+                OnDevice.startDownload(viewModelScope)
+            }
             val (source, why) = Summary.resolve(
                 mode = mode,
                 hasCloudKey = Gemini.isConfigured,
                 hasNetwork = online(),
-                hasDeviceModel = deviceCapability?.any == true,
+                // Only a model already on disk counts. One still downloading
+                // cannot answer this request, whatever it can do later.
+                hasDeviceModel = deviceCapability?.readyNow == true,
             )
 
             val body = Summary.sourceText(recap)
@@ -391,6 +398,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     ?: emptyList()
             }.getOrDefault(emptyList())
 
+            // A function rather than a string: the phone's model has a much smaller
+            // window than the cloud one, and only this knows what can be dropped.
+            val instructionFor = { budget: Int ->
+                Summary.prompt(show, upTo, characters, Summary.sourceText(recap, budget))
+            }
             val instruction = Summary.prompt(show, upTo, characters, body)
             android.util.Log.i(
                 "Watching.Summary",
@@ -406,27 +418,31 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         }
                         .onFailure {
                             android.util.Log.w("Watching.Summary", "cloud summarise failed", it)
-                            runOnDevice(instruction, body, characters.size, Summary.Fallback.FAILED)
+                            runOnDevice(instructionFor, body, characters.size, Summary.Fallback.FAILED)
                         }
 
-                Summary.Source.DEVICE -> runOnDevice(instruction, body, characters.size, why)
+                Summary.Source.DEVICE -> runOnDevice(instructionFor, body, characters.size, why)
                 Summary.Source.RAW -> _recapped.value = Recapped(null, Summary.Source.RAW, why)
             }
         }
     }
 
     private suspend fun runOnDevice(
-        instruction: String,
+        instruction: (Int) -> String,
         body: String,
         characters: Int,
         why: Summary.Fallback?,
     ) {
         val capability = deviceCapability
-        if (capability?.any != true) {
+        if (capability?.readyNow != true) {
             _recapped.value = Recapped(
                 null,
                 Summary.Source.RAW,
-                why ?: Summary.Fallback.NO_DEVICE_MODEL,
+                why ?: if (capability?.needsDownload == true) {
+                    Summary.Fallback.DEVICE_DOWNLOADING
+                } else {
+                    Summary.Fallback.NO_DEVICE_MODEL
+                },
             )
             return
         }

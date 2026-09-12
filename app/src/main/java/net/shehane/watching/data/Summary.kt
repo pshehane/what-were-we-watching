@@ -33,6 +33,8 @@ object Summary {
         NO_KEY,
         NO_NETWORK,
         NO_DEVICE_MODEL,
+        /** The phone can do it, but is still fetching the model. Try again later. */
+        DEVICE_DOWNLOADING,
         FAILED,
     }
 
@@ -77,6 +79,32 @@ object Summary {
      * Built from [Recap.catchUp], so the cut-off is the same one the raw view
      * uses and there is only one place it can go wrong.
      */
+    /**
+     * The same text, trimmed to fit a budget.
+     *
+     * The oldest material goes first: a phone-sized model has room for a few
+     * thousand characters, and what happened three seasons ago matters less than
+     * what happened last week. Season synopses go before episodes for the same
+     * reason, since they are the coarsest thing in there.
+     */
+    fun sourceText(recap: Recap.CatchUp, maxChars: Int): String {
+        var earlier = recap.earlier
+        var recent = recap.recent
+
+        while (true) {
+            val text = sourceText(recap.copy(earlier = earlier, recent = recent))
+            if (text.length <= maxChars) return text
+
+            when {
+                earlier.isNotEmpty() -> earlier = earlier.drop(1)
+                recent.size > 1 -> recent = recent.dropLast(1)
+                // One episode left and still too long: the caller's budget is
+                // smaller than a single synopsis, so hand back what will fit.
+                else -> return text.take(maxChars)
+            }
+        }
+    }
+
     fun sourceText(recap: Recap.CatchUp): String = buildString {
         // Oldest first: a summary reads forwards even though the list shows the
         // most recent at the top.

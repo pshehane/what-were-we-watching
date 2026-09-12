@@ -83,6 +83,9 @@ private fun App() {
     val popularHere by vm.popularHere.collectAsStateWithLifecycle()
     val travelLoading by vm.travelLoading.collectAsStateWithLifecycle()
     val countryPickerOpen by vm.countryPickerOpen.collectAsStateWithLifecycle()
+    val searchRegion by vm.searchRegion.collectAsStateWithLifecycle()
+    val regionPickerOpen by vm.regionPickerOpen.collectAsStateWithLifecycle()
+    val searchAvailability by vm.searchAvailability.collectAsStateWithLifecycle()
 
     val insets = WindowInsets.safeDrawing.asPaddingValues()
 
@@ -99,6 +102,7 @@ private fun App() {
     BackHandler {
         when {
             draft != null -> vm.cancelAdd()
+            screen is Screen.Search && regionPickerOpen -> vm.setRegionPickerOpen(false)
             screen is Screen.Search && query.isNotEmpty() -> vm.clearQuery()
             screen is Screen.Wishlist && countryPickerOpen -> vm.setCountryPickerOpen(false)
             screen is Screen.Wishlist && viewingCountry != library.homeCountry ->
@@ -134,6 +138,7 @@ private fun App() {
             }
 
             is Screen.Search -> {
+                LaunchedEffect(Unit) { vm.loadCountries() }
                 AddScreen(
                     library = library,
                     query = query,
@@ -143,6 +148,12 @@ private fun App() {
                     seatedNames = "",
                     seatedPeople = library.people.filter { it.id in seated },
                     existingFor = vm::existingFor,
+                    searchRegion = searchRegion,
+                    countries = countries,
+                    regionPickerOpen = regionPickerOpen,
+                    onRegionPickerOpen = vm::setRegionPickerOpen,
+                    onSetRegion = vm::setSearchRegion,
+                    searchAvailability = searchAvailability,
                     onQueryChanged = vm::onQueryChanged,
                     onClear = vm::clearQuery,
                     onPick = vm::beginAdd,

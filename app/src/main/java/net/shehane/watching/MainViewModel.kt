@@ -117,6 +117,23 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private var travelJob: Job? = null
 
+    // --- the region the search is answering for ---
+
+    /** Empty means "anywhere": show every result, filter nothing. */
+    private val _searchRegion = MutableStateFlow(store.library.value.homeCountry)
+    val searchRegion: StateFlow<String> = _searchRegion.asStateFlow()
+
+    private val _regionPickerOpen = MutableStateFlow(false)
+    val regionPickerOpen: StateFlow<Boolean> = _regionPickerOpen.asStateFlow()
+
+    /** tmdb id -> country -> availability. Cached across searches. */
+    private val _searchAvailability =
+        MutableStateFlow<Map<Int, Map<String, Tmdb.Availability>>>(emptyMap())
+    val searchAvailability: StateFlow<Map<Int, Map<String, Tmdb.Availability>>> =
+        _searchAvailability.asStateFlow()
+
+    private var lookupJob: Job? = null
+
     private var searchJob: Job? = null
 
     init {
@@ -398,7 +415,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             delay(250)
             _searching.value = true
             runCatching { Tmdb.search(text) }
-                .onSuccess { _results.value = it; _searchError.value = null }
+                .onSuccess {
+                    _results.value = it
+                    _searchError.value = null
+                    lookUpRegions(it)
+                }
                 .onFailure {
                     _results.value = emptyList()
                     _searchError.value = when {
@@ -410,8 +431,40 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun setSearchRegion(code: String) {
+        _searchRegion.value = code
+        _regionPickerOpen.value = false
+    }
+
+    fun setRegionPickerOpen(open: Boolean) {
+        _regionPickerOpen.value = open
+        if (open) loadCountries()
+    }
+
+    /**
+     * Looks up where the results can be watched, after they are already on screen.
+     * Typing stays fast; the region answer arrives a moment later and the list
+     * regroups itself. Capped, because a search returns twenty results and nobody
+     * scrolls to the twentieth.
+     */
+    private fun lookUpRegions(results: List<Tmdb.SearchItem>) {
+        lookupJob?.cancel()
+        val wanted = results.take(10).map { it.id }
+            .filter { _searchAvailability.value[it] == null }
+        if (wanted.isEmpty()) return
+
+        lookupJob = viewModelScope.launch {
+            val found = _searchAvailability.value.toMutableMap()
+            for (id in wanted) {
+                runCatching { Tmdb.availabilityEverywhere(id) }
+                    .onSuccess { found[id] = it; _searchAvailability.value = found.toMap() }
+            }
+        }
+    }
+
     fun clearQuery() {
         searchJob?.cancel()
+        lookupJob?.cancel()
         _query.value = ""
         _results.value = emptyList()
         _searchError.value = null

@@ -27,6 +27,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,6 +61,12 @@ fun AddScreen(
     seatedNames: String,
     seatedPeople: List<net.shehane.watching.model.Person>,
     existingFor: (Int) -> Show?,
+    searchRegion: String,
+    countries: List<Tmdb.Country>,
+    regionPickerOpen: Boolean,
+    onRegionPickerOpen: (Boolean) -> Unit,
+    onSetRegion: (String) -> Unit,
+    searchAvailability: Map<Int, Map<String, Tmdb.Availability>>,
     onQueryChanged: (String) -> Unit,
     onClear: () -> Unit,
     onPick: (Tmdb.SearchItem) -> Unit,
@@ -67,6 +74,28 @@ fun AddScreen(
     onBack: () -> Unit,
     topInset: PaddingValues,
 ) {
+    val countryName = { code: String ->
+        countries.firstOrNull { it.code == code }?.name ?: code
+    }
+    val regionLabel = if (searchRegion.isBlank()) "Anywhere" else countryName(searchRegion)
+    var regionFilter by remember { mutableStateOf("") }
+    var showOthers by remember(searchRegion) { mutableStateOf(false) }
+
+    // Read straight off the map so Compose can see the dependency. Behind a
+    // lambda it could not, and the list never regrouped when the lookups landed.
+    fun availableHere(tmdbId: Int): Boolean? {
+        if (searchRegion.isBlank()) return true
+        val byCountry = searchAvailability[tmdbId] ?: return null
+        return byCountry[searchRegion]?.isStreamable == true
+    }
+
+    fun regionsFor(tmdbId: Int): List<String> {
+        val byCountry = searchAvailability[tmdbId] ?: return emptyList()
+        val preferred = listOf("US", "GB", "CA", "AU", "IE", "NZ")
+        return byCountry.filterValues { it.isStreamable }.keys.sortedWith(
+            compareBy({ preferred.indexOf(it).takeIf { i -> i >= 0 } ?: preferred.size }, { it })
+        )
+    }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 
@@ -134,6 +163,38 @@ fun AddScreen(
             HGap(9.dp)
             AvatarRow(seatedPeople, 24.dp, Ink.Ground)
             Spacer(Modifier.weight(1f))
+
+            // Most searches are for something already on the couch, so the default
+            // is home and the chip stays quiet. It only earns colour once you have
+            // widened the search to somewhere else.
+            Row(
+                modifier = Modifier
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(9.dp))
+                    .then(
+                        if (searchRegion.isBlank()) {
+                            Modifier.background(Ink.Cool.copy(alpha = 0.18f))
+                                .border(1.dp, Ink.Cool, RoundedCornerShape(9.dp))
+                        } else {
+                            Modifier.border(1.dp, Ink.Line, RoundedCornerShape(9.dp))
+                        }
+                    )
+                    .clickable { onRegionPickerOpen(!regionPickerOpen) }
+                    .padding(horizontal = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BasicText(
+                    regionLabel,
+                    style = Type.Meta.copy(
+                        fontSize = 11.5.sp,
+                        color = if (searchRegion.isBlank()) Ink.Cool else Ink.Muted,
+                    ),
+                    maxLines = 1,
+                    overflow = Clip,
+                )
+                HGap(6.dp)
+                Draw.Chevron(12.dp, if (searchRegion.isBlank()) Ink.Cool else Ink.Ghost)
+            }
         }
 
         // --- results ---
@@ -149,14 +210,137 @@ fun AddScreen(
                 item("none") { EmptyNote("Nothing found for “$query”.") }
             }
 
-            items(results, key = { it.id }) { item ->
+            if (regionPickerOpen) {
+                item("region-head") {
+                    Column {
+                        SectionHeader("SEARCH FOR SHOWS IN", Ink.Faint)
+                        VGap(10.dp)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp)
+                                .clip(RoundedCornerShape(11.dp))
+                                .background(Ink.Surface)
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Draw.Search(17.dp, Ink.Faint)
+                            HGap(9.dp)
+                            Box(Modifier.weight(1f)) {
+                                if (regionFilter.isEmpty()) {
+                                    BasicText(
+                                        "Type a country",
+                                        style = Type.BodyTight.copy(color = Ink.Ghost),
+                                    )
+                                }
+                                BasicTextField(
+                                    value = regionFilter,
+                                    onValueChange = { regionFilter = it },
+                                    singleLine = true,
+                                    textStyle = Type.Label,
+                                    cursorBrush = SolidColor(Ink.Amber),
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        }
+                        VGap(4.dp)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                                .clickable { onSetRegion("") },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column {
+                                BasicText(
+                                    "Anywhere",
+                                    style = Type.Label.copy(
+                                        color = if (searchRegion.isBlank()) Ink.Amber else Ink.Text
+                                    ),
+                                )
+                                BasicText("Do not filter by country at all", style = Type.Meta)
+                            }
+                        }
+                        Divider(Ink.LineSoft)
+                    }
+                }
+                items(
+                    countries.filter {
+                        regionFilter.isBlank() || it.name.contains(regionFilter.trim(), true)
+                    },
+                    key = { "sr-" + it.code },
+                ) { country ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp)
+                            .clickable { onSetRegion(country.code) },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        BasicText(
+                            country.name,
+                            style = Type.Label.copy(
+                                color = if (country.code == searchRegion) Ink.Amber else Ink.Text
+                            ),
+                            maxLines = 1,
+                            overflow = Clip,
+                        )
+                    }
+                }
+                return@LazyColumn
+            }
+
+            // Split by the chosen region. Nothing is thrown away: shows that are
+            // not here collapse behind one line, because the reason you are
+            // searching may be precisely that one of them is missing.
+            val here = results.filter { availableHere(it.id) != false }
+            val elsewhere = results.filter { availableHere(it.id) == false }
+
+            items(here, key = { it.id }) { item ->
                 val existing = existingFor(item.id)
                 ResultRow(
                     library = library,
                     item = item,
                     existing = existing,
+                    regions = emptyList(),
                     onPick = { if (existing != null) onOpenExisting(existing.id) else onPick(item) },
                 )
+            }
+
+            if (elsewhere.isNotEmpty()) {
+                item("others-toggle") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .clickable { showOthers = !showOthers },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        BasicText(
+                            (if (showOthers) "Hide " else "Show ") + elsewhere.size +
+                                " not in " + regionLabel,
+                            style = Type.Meta.copy(color = Ink.Cool, fontSize = 12.sp),
+                        )
+                        HGap(7.dp)
+                        Draw.Chevron(13.dp, Ink.Cool)
+                    }
+                }
+                if (showOthers) {
+                    items(elsewhere, key = { "o-" + it.id }) { item ->
+                        val existing = existingFor(item.id)
+                        ResultRow(
+                            library = library,
+                            item = item,
+                            existing = existing,
+                            // Names, not ISO codes: the wishlist says "Australia"
+                            // and this list should not say "AU".
+                            regions = regionsFor(item.id).map(countryName),
+                            onPick = {
+                                if (existing != null) onOpenExisting(existing.id) else onPick(item)
+                            },
+                        )
+                    }
+                }
             }
         }
     }
@@ -167,6 +351,7 @@ private fun ResultRow(
     library: Library,
     item: Tmdb.SearchItem,
     existing: Show?,
+    regions: List<String>,
     onPick: () -> Unit,
 ) {
     // Before it is added there is no service on record, so the badge shows what the
@@ -205,6 +390,17 @@ private fun ResultRow(
                     maxLines = 1,
                     overflow = Clip,
                 )
+                if (regions.isNotEmpty()) {
+                    VGap(5.dp)
+                    BasicText(
+                        regions.take(3).joinToString(", ") + (
+                            if (regions.size > 3) " +" + (regions.size - 3) + " more" else ""
+                            ),
+                        style = Type.Meta.copy(color = Ink.Cool, fontSize = 11.sp),
+                        maxLines = 1,
+                        overflow = Clip,
+                    )
+                }
                 if (existing != null) {
                     VGap(5.dp)
                     Row(verticalAlignment = Alignment.CenterVertically) {

@@ -54,6 +54,8 @@ fun WishlistScreen(
     availability: Map<String, Tmdb.Availability>,
     popularHere: List<Tmdb.SearchItem>,
     loading: Boolean,
+    picking: Boolean,
+    onPickingChange: (Boolean) -> Unit,
     onViewCountry: (String) -> Unit,
     onSetHome: (String) -> Unit,
     onStartWatching: (String) -> Unit,
@@ -62,7 +64,6 @@ fun WishlistScreen(
     onAdd: () -> Unit,
     insets: PaddingValues,
 ) {
-    var picking by remember { mutableStateOf(false) }
     var filter by remember { mutableStateOf("") }
     val away = viewingCountry != library.homeCountry
     val countryName = countries.firstOrNull { it.code == viewingCountry }?.name ?: viewingCountry
@@ -109,7 +110,7 @@ fun WishlistScreen(
                                         .border(1.dp, Ink.Cool, RoundedCornerShape(11.dp))
                                     else Modifier.border(1.dp, Ink.Line, RoundedCornerShape(11.dp))
                                 )
-                                .clickable { picking = !picking }
+                                .clickable { onPickingChange(!picking) } 
                                 .padding(horizontal = 13.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -190,10 +191,7 @@ fun WishlistScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 18.dp)
                             .height(46.dp)
-                            .clickable {
-                                picking = false
-                                onViewCountry(country.code)
-                            },
+                            .clickable { onViewCountry(country.code) },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         BasicText(

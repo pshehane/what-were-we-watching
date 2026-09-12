@@ -2,6 +2,7 @@ package net.shehane.watching
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -81,6 +82,7 @@ private fun App() {
     val availability by vm.availability.collectAsStateWithLifecycle()
     val popularHere by vm.popularHere.collectAsStateWithLifecycle()
     val travelLoading by vm.travelLoading.collectAsStateWithLifecycle()
+    val countryPickerOpen by vm.countryPickerOpen.collectAsStateWithLifecycle()
 
     val insets = WindowInsets.safeDrawing.asPaddingValues()
 
@@ -90,6 +92,20 @@ private fun App() {
     ) { result -> vm.onSignInResult(result.data) }
 
     LaunchedEffect(Unit) { vm.onResumed() }
+
+    // Back undoes the last thing that happened, whatever that was, and never
+    // leaves the app: at the root it is simply consumed. Order matters - a sheet
+    // or a picker sitting over a screen is what back should shut first.
+    BackHandler {
+        when {
+            draft != null -> vm.cancelAdd()
+            screen is Screen.Search && query.isNotEmpty() -> vm.clearQuery()
+            screen is Screen.Wishlist && countryPickerOpen -> vm.setCountryPickerOpen(false)
+            screen is Screen.Wishlist && viewingCountry != library.homeCountry ->
+                vm.viewCountry(library.homeCountry)
+            else -> vm.popScreen()
+        }
+    }
 
     Box(Modifier.fillMaxSize().background(Ink.Ground)) {
         when (val current = screen) {
@@ -131,7 +147,7 @@ private fun App() {
                     onClear = vm::clearQuery,
                     onPick = vm::beginAdd,
                     onOpenExisting = { vm.go(Screen.ShowDetail(it)) },
-                    onBack = { vm.go(Screen.Couch) },
+                    onBack = { vm.popScreen() },
                     topInset = insets,
                 )
             }
@@ -139,20 +155,20 @@ private fun App() {
             is Screen.ShowDetail -> {
                 val show = library.showOrNull(current.showId)
                 if (show == null) {
-                    LaunchedEffect(current.showId) { vm.go(Screen.Couch) }
+                    LaunchedEffect(current.showId) { vm.popScreen() }
                 } else {
                     ShowScreen(
                         library = library,
                         show = show,
-                        onBack = { vm.go(Screen.Couch) },
+                        onBack = { vm.popScreen() },
                         onStep = { vm.step(show.id, it) },
                         onFinishSeason = { vm.finishSeason(show.id) },
                         onSetPosition = { vm.setPosition(show.id, it) },
                         onSetWatchedWith = { vm.setWatchedWith(show.id, it) },
                         onSetPlacement = { s, p -> vm.setPlacement(show.id, s, p) },
-                        onSnooze = { vm.snooze(show.id); vm.go(Screen.Couch) },
-                        onAbandon = { vm.abandon(show.id); vm.go(Screen.Couch) },
-                        onFinish = { vm.finish(show.id); vm.go(Screen.Couch) },
+                        onSnooze = { vm.snooze(show.id); vm.popScreen() },
+                        onAbandon = { vm.abandon(show.id); vm.popScreen() },
+                        onFinish = { vm.finish(show.id); vm.popScreen() },
                         onReactivate = { vm.reactivate(show.id) },
                         onDelete = { vm.deleteShow(show.id) },
                         insets = insets,
@@ -164,7 +180,7 @@ private fun App() {
                 ProfilesScreen(
                     library = library,
                     syncState = syncState,
-                    onBack = { vm.go(Screen.Couch) },
+                    onBack = { vm.popScreen() },
                     onAddProfile = { serviceId, name -> vm.addProfile(serviceId, name) },
                     onRenameProfile = vm::renameProfile,
                     onSetDefault = vm::setDefaultProfile,
@@ -182,7 +198,7 @@ private fun App() {
             }
 
             is Screen.About -> {
-                AboutScreen(onBack = { vm.go(Screen.Profiles) }, insets = insets)
+                AboutScreen(onBack = { vm.popScreen() }, insets = insets)
             }
 
             is Screen.Wishlist -> {
@@ -195,6 +211,8 @@ private fun App() {
                     availability = availability,
                     popularHere = popularHere,
                     loading = travelLoading,
+                    picking = countryPickerOpen,
+                    onPickingChange = vm::setCountryPickerOpen,
                     onViewCountry = vm::viewCountry,
                     onSetHome = vm::setHomeCountry,
                     onStartWatching = vm::startWatching,

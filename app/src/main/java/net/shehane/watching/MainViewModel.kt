@@ -47,8 +47,27 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     val library: StateFlow<Library> = store.library
 
+    /**
+     * A real back stack, so back means "where I came from" rather than a guess.
+     * Opening a show from the wishlist and pressing back returns to the wishlist,
+     * not to the couch.
+     *
+     * The two tabs are roots: switching tabs replaces the stack rather than piling
+     * one tab on top of the other, which would make back walk backwards through
+     * every tab you had ever touched.
+     */
+    private val stack = ArrayDeque<Screen>().apply { addLast(Screen.Couch) }
+
     private val _screen = MutableStateFlow<Screen>(Screen.Couch)
     val screen: StateFlow<Screen> = _screen.asStateFlow()
+
+    /** Hoisted out of the wishlist screen so back can close it before anything else. */
+    private val _countryPickerOpen = MutableStateFlow(false)
+    val countryPickerOpen: StateFlow<Boolean> = _countryPickerOpen.asStateFlow()
+
+    fun setCountryPickerOpen(open: Boolean) {
+        _countryPickerOpen.value = open
+    }
 
     /** Who is on the couch. Starts as everyone, which is the common case. */
     private val _seated = MutableStateFlow<Set<String>>(emptySet())
@@ -106,15 +125,27 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     // ------------------------------------------------------------ navigation
 
-    fun go(screen: Screen) {
-        _screen.value = screen
+    fun go(target: Screen) {
+        when (target) {
+            is Screen.Couch, is Screen.Wishlist -> {
+                stack.clear()
+                stack.addLast(target)
+            }
+            else -> if (stack.lastOrNull() != target) stack.addLast(target)
+        }
+        if (target !is Screen.Wishlist) _countryPickerOpen.value = false
+        _screen.value = stack.last()
     }
 
-    fun back() {
-        _screen.value = when (_screen.value) {
-            is Screen.Couch -> Screen.Couch
-            else -> Screen.Couch
-        }
+    /**
+     * One step back. Returns false when there is nowhere left to go, which is the
+     * signal to stay put: back never leaves this app.
+     */
+    fun popScreen(): Boolean {
+        if (stack.size <= 1) return false
+        stack.removeLast()
+        _screen.value = stack.last()
+        return true
     }
 
     fun onResumed() {
@@ -187,7 +218,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteShow(showId: String) {
         store.deleteShow(showId)
-        if (_screen.value is Screen.ShowDetail) _screen.value = Screen.Couch
+        // Leave the detail screen for a show that no longer exists, back to
+        // whichever list you opened it from.
+        if (_screen.value is Screen.ShowDetail) popScreen()
+        // Any other screen showing it - the wishlist - just drops the row.
         pushSoon()
     }
 
@@ -271,6 +305,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun viewCountry(code: String) {
+        _countryPickerOpen.value = false
         if (_viewingCountry.value == code) return
         _viewingCountry.value = code
         loadTravel()

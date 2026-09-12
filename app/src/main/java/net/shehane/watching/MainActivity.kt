@@ -177,6 +177,9 @@ private fun App() {
 
             is Screen.ShowDetail -> {
                 val show = library.showOrNull(current.showId)
+                // Repairs a thin record: shows added from a suggestion arrive with
+                // no season count, and this is the screen where that shows up.
+                LaunchedEffect(current.showId) { vm.fillDetails(current.showId) }
                 if (show == null) {
                     LaunchedEffect(current.showId) { vm.popScreen() }
                 } else {

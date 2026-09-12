@@ -261,6 +261,37 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         pushSoon()
     }
 
+    /** Asked once per show per session, so reopening a screen is free. */
+    private val detailsAsked = mutableSetOf<String>()
+
+    /**
+     * Fetches the season and episode counts for a show that has none.
+     *
+     * The add flow gets these from TMDB when you add a show. Voting on a
+     * suggestion did not, because a search result does not carry them, so every
+     * show that arrived that way had no idea how long it was. This repairs those
+     * records the first time you open one, and runs after the screen is drawn so
+     * nothing waits on it.
+     */
+    fun fillDetails(showId: String) {
+        val show = library.value.showOrNull(showId) ?: return
+        val tmdbId = show.tmdbId ?: return
+        if (show.seasonCount != null && show.wikipediaUrl != null) return
+        if (!detailsAsked.add(showId)) return
+
+        viewModelScope.launch {
+            if (show.seasonCount == null) {
+                runCatching { Tmdb.detail(tmdbId) }
+                    .onSuccess { store.fillDetails(showId, it.seasonCount, it.episodeCount) }
+            }
+            if (show.wikipediaUrl == null) {
+                runCatching { Tmdb.wikipediaUrl(tmdbId, show.title, show.year) }
+                    .onSuccess { url -> url?.let { store.setWikipediaUrl(showId, it) } }
+            }
+            pushSoon()
+        }
+    }
+
     fun setWatchedWith(showId: String, people: List<String>) {
         store.setWatchedWith(showId, people)
         pushSoon()
@@ -417,6 +448,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         )
         store.vote(id, loved)
 
+        // The record is thin until this lands: a search result carries no season
+        // count. Filled after the fact so the tap itself stays instant.
+        fillDetails(id)
+
         val wasAt = _guesses.value.indexOfFirst { it.id == item.id }
         _guesses.value = _guesses.value.filterNot { it.id == item.id }
         _verdicts.value = _verdicts.value + (item.id to loved)
@@ -499,6 +534,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             watchedWith = emptyList(),
             state = Show.STATE_WISHLIST,
         )
+        fillDetails(id)
+
         val wasAt = _guesses.value.indexOfFirst { it.id == item.id }
         _guesses.value = _guesses.value.filterNot { it.id == item.id }
         say("${item.name} is on the wishlist.") {

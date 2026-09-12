@@ -67,13 +67,24 @@ data class Profile(
     val name: String,
 )
 
+/**
+ * The last episode watched.
+ *
+ * Episode 0 means none of this season yet, which is the only way to say "we have
+ * finished everything before season 7" without knowing how many episodes season 6
+ * had. Finishing a season lands here, and so does picking a season directly.
+ */
 @Serializable
 data class Position(
     val season: Int = 1,
     val episode: Int = 1,
 ) {
-    override fun toString(): String = "S$season · E$episode"
-    val short: String get() = "S$season E$episode"
+    val notStarted: Boolean get() = episode <= 0
+
+    override fun toString(): String =
+        if (notStarted) "S$season · start" else "S$season · E$episode"
+
+    val short: String get() = if (notStarted) "S$season start" else "S$season E$episode"
 }
 
 @Serializable

@@ -55,7 +55,10 @@ object Csv {
             // A wishlist entry was never started, so writing S1 E1 would be a
             // small lie in a file meant for reading.
             if (show.isWishlist) "" else show.position.season.toString(),
-            if (show.isWishlist) "" else show.position.episode.toString(),
+            // Blank rather than 0: a spreadsheet reader has no idea what episode
+            // zero means, and "not started" is what the season column already says.
+            if (show.isWishlist || show.position.notStarted) ""
+            else show.position.episode.toString(),
             show.state,
             when (show.liked) {
                 true -> "loved"

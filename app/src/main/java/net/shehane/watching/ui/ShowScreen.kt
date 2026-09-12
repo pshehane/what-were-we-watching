@@ -75,10 +75,12 @@ fun ShowScreen(
     var editingPlacement by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var sharing by remember(show.id) { mutableStateOf(false) }
+    var pickingSeason by remember(show.id) { mutableStateOf(false) }
 
     // Back shuts whichever block is open before it leaves the screen. Both live
     // here rather than in the view model, so the handler does too.
     BackHandler(enabled = sharing) { sharing = false }
+    BackHandler(enabled = pickingSeason) { pickingSeason = false }
     BackHandler(enabled = confirmDelete) { confirmDelete = false }
 
     Box(Modifier.fillMaxSize().background(Ink.Ground)) {
@@ -239,6 +241,7 @@ fun ShowScreen(
                 VGap(16.dp)
 
                 // --- where you are ---
+                val seasons = show.seasonCount
                 Column(
                     Modifier
                         .fillMaxWidth()
@@ -250,13 +253,20 @@ fun ShowScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SquareButton(onClick = { onStep(-1) }) { Draw.Minus(16.dp) }
                         Column(
-                            Modifier.weight(1f),
+                            Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable(enabled = seasons != null) {
+                                    pickingSeason = !pickingSeason
+                                }
+                                .padding(vertical = 2.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             BasicText(show.position.toString(), style = Type.Numeral)
                             VGap(2.dp)
                             BasicText(
-                                "last watched ${Clock.ago(show.lastWatchedAt ?: show.addedAt)}",
+                                if (seasons != null) "tap to jump to a season"
+                                else "last watched ${Clock.ago(show.lastWatchedAt ?: show.addedAt)}",
                                 style = Type.Meta,
                             )
                         }
@@ -264,6 +274,49 @@ fun ShowScreen(
                             Draw.Plus(17.dp, Ink.Ground)
                         }
                     }
+                    // Jumping straight to a season, rather than tapping "Finished S1"
+                    // six times to get to the seventh. The last one is right there,
+                    // which is usually the one you want.
+                    if (pickingSeason && seasons != null) {
+                        VGap(12.dp)
+                        Divider(Ink.Line)
+                        VGap(11.dp)
+                        for (row in (1..seasons).chunked(6)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                for (n in row) {
+                                    val current = n == show.position.season
+                                    Box(
+                                        Modifier
+                                            .size(44.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .then(
+                                                if (current) Modifier.background(Ink.Amber)
+                                                else Modifier.border(1.dp, Ink.Line, RoundedCornerShape(10.dp))
+                                            )
+                                            .clickable {
+                                                onSetPosition(Position(season = n, episode = 0))
+                                                pickingSeason = false
+                                            },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        BasicText(
+                                            "S$n",
+                                            style = Type.Label.copy(
+                                                color = if (current) Ink.Ground else Ink.Text,
+                                            ),
+                                        )
+                                    }
+                                }
+                                repeat(6 - row.size) { Spacer(Modifier.size(44.dp)) }
+                            }
+                            VGap(7.dp)
+                        }
+                        BasicText(
+                            "Says you have finished everything before that season.",
+                            style = Type.Meta,
+                        )
+                    }
+
                     VGap(11.dp)
                     Divider(Ink.Line)
                     VGap(11.dp)
@@ -276,8 +329,7 @@ fun ShowScreen(
                         // On the last season there is nothing to roll into, so the
                         // button offers the thing you actually mean instead of
                         // inventing a season the show does not have.
-                        val onLastSeason = show.seasonCount != null &&
-                            show.position.season >= show.seasonCount
+                        val onLastSeason = seasons != null && show.position.season >= seasons
                         PillButton(
                             text = if (onLastSeason) "Finished it" else "Finished S${show.position.season}",
                             onClick = if (onLastSeason) onFinish else onFinishSeason,

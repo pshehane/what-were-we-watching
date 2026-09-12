@@ -170,14 +170,18 @@ class LibraryStore(private val context: Context) {
     }
 
     fun stepEpisode(id: String, delta: Int) = updateShow(id) { show ->
-        val e = (show.position.episode + delta).coerceAtLeast(1)
+        // Down to 0, not 1: zero is "none of this season yet", and stepping back
+        // off the first episode of a season has to land somewhere truthful.
+        val e = (show.position.episode + delta).coerceAtLeast(0)
         show.copy(position = show.position.copy(episode = e), lastWatchedAt = Clock.now())
     }
 
     /** For the weeks you only open this once a season. */
     fun finishSeason(id: String) = updateShow(id) { show ->
+        // Episode 0 of the next season. Episode 1 would claim you had already
+        // watched the opener of a season you have not started.
         show.copy(
-            position = Position(season = show.position.season + 1, episode = 1),
+            position = Position(season = show.position.season + 1, episode = 0),
             lastWatchedAt = Clock.now(),
         )
     }
@@ -221,6 +225,35 @@ class LibraryStore(private val context: Context) {
             lastWatchedAt = it.lastWatchedAt ?: Clock.now(),
         )
     }
+
+    /**
+     * Fills in what a record is missing, without touching anything already set.
+     *
+     * A show added from a suggestion carries only what a search result holds, and
+     * the season count is not in that. Without it the app cannot tell you which
+     * season is the last one, and "Finished S7" on a seven-season show offers an
+     * eighth that does not exist.
+     */
+    fun fillDetails(id: String, seasons: Int?, episodes: Int?) = updateShow(id) { show ->
+        // What is already stored wins. The add flow asks TMDB properly and this is
+        // only a patch for records that never got that, so it fills gaps and
+        // overwrites nothing.
+        val count = show.seasonCount ?: seasons
+        show.copy(
+            seasonCount = count,
+            episodeCount = show.episodeCount ?: episodes,
+            // A position past the end of the show could only have come from not
+            // knowing where the end was. Pull it back to the last real season.
+            position =
+                if (count != null && show.position.season > count) {
+                    show.position.copy(season = count)
+                } else {
+                    show.position
+                },
+        )
+    }
+
+    fun setWikipediaUrl(id: String, url: String) = updateShow(id) { it.copy(wikipediaUrl = url) }
 
     /**
      * Back to no opinion. The show stays finished: you are taking back what you

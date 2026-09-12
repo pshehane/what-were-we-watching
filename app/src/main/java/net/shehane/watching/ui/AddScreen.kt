@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -256,6 +258,11 @@ fun AddSheet(
     onDismiss: () -> Unit,
     bottomInset: PaddingValues,
 ) {
+    // The search keyboard is still up when the sheet slides over it, covering the
+    // button that finishes the add.
+    val keyboard = androidx.compose.ui.platform.LocalSoftwareKeyboardController.current
+    LaunchedEffect(draft.result.id) { keyboard?.hide() }
+
     Box(
         Modifier
             .fillMaxSize()
@@ -263,18 +270,27 @@ fun AddSheet(
             .clickable(onClick = onDismiss),
     )
 
+    // The sheet is taller than the screen on a phone once the fields are in, so it
+    // scrolls, stops short of the status bar, and keeps the one button that
+    // finishes the job pinned where a thumb can always reach it.
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(top = bottomInset.calculateTopPadding() + 12.dp)
                 .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                .background(Ink.Surface)
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 22.dp + bottomInset.calculateBottomPadding()),
+                .background(Ink.Surface),
         ) {
             Box(Modifier.fillMaxWidth().padding(top = 9.dp, bottom = 14.dp), contentAlignment = Alignment.Center) {
                 Box(Modifier.width(40.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Ink.Line))
             }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp),
+            ) {
 
             // --- what we matched ---
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -360,8 +376,11 @@ fun AddSheet(
             // --- service ---
             SectionHeader("SERVICE", Ink.Faint)
             VGap(8.dp)
+            // TMDB's answer sorted to the front: a selected chip off the right-hand
+            // edge looks like nothing was chosen at all.
+            val orderedServices = library.services.sortedByDescending { it.id == draft.serviceId }
             ChipRow {
-                for (service in library.services) {
+                for (service in orderedServices) {
                     val on = service.id == draft.serviceId
                     Chip(
                         text = service.name,
@@ -470,11 +489,14 @@ fun AddSheet(
                 } }, height = 38.dp, tint = Ink.Muted)
             }
 
-            VGap(18.dp)
+                VGap(18.dp)
+            }
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 22.dp + bottomInset.calculateBottomPadding())
                     .height(56.dp)
                     .clip(RoundedCornerShape(15.dp))
                     .background(Ink.Amber)

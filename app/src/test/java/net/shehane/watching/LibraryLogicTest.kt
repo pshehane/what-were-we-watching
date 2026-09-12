@@ -58,14 +58,50 @@ class LibraryLogicTest {
 
     @Test
     fun `the same show is only a partial match when someone on it is absent`() {
-        // This is the rule the whole app turns on: two of you watching a show the
-        // other two are also on would leave those two behind, so it is not offered
-        // as a full match.
+        // The rule the whole app turns on: two of you watching a show the other two
+        // are also on would leave those two behind, so it is NOT offered as a full
+        // match. Getting this backwards is the single most expensive mistake here.
         val lib = library(show("1", "Arcane", listOf("ben", "cal", "dee")))
         val result = Couch.build(lib, setOf("me", "ben"))
 
-        assertEquals(1, result.primary.size)
-        assertEquals("Arcane", result.primary[0].show.title)
+        assertEquals(0, result.primary.size)
+        assertEquals(1, result.secondary.size)
+        assertEquals(listOf("cal", "dee"), result.secondary[0].absent)
+        assertTrue(result.secondary[0].missing.isEmpty())
+    }
+
+    @Test
+    fun `a full match needs the show's people and the couch to be the same set`() {
+        val lib = library(show("1", "Arcane", listOf("ben")))
+
+        // Exactly the show's people are seated.
+        val exact = Couch.build(lib, setOf("me", "ben"))
+        assertEquals(1, exact.primary.size)
+        assertTrue(exact.primary[0].absent.isEmpty())
+        assertTrue(exact.primary[0].missing.isEmpty())
+
+        // One extra person on the couch who is not on the show.
+        val extra = Couch.build(lib, setOf("me", "ben", "cal"))
+        assertEquals(0, extra.primary.size)
+        assertEquals(listOf("cal"), extra.secondary[0].missing)
+
+        // One of the show's people has gone to bed.
+        val short = Couch.build(lib, setOf("me"))
+        assertEquals(0, short.primary.size)
+        assertEquals(listOf("ben"), short.secondary[0].absent)
+    }
+
+    @Test
+    fun `shows nobody would fall behind on sort above shows someone would`() {
+        val lib = library(
+            show("1", "Everyone", listOf("ben", "cal")),
+            show("2", "JustUs", listOf("ben")),
+        )
+        // Seated: me and ben. "JustUs" is an exact match; "Everyone" leaves cal behind.
+        val result = Couch.build(lib, setOf("me", "ben"))
+
+        assertEquals(listOf("JustUs"), result.primary.map { it.show.title })
+        assertEquals(listOf("Everyone"), result.secondary.map { it.show.title })
     }
 
     @Test
@@ -77,6 +113,7 @@ class LibraryLogicTest {
         assertEquals(1, result.secondary.size)
         assertEquals(listOf("cal"), result.secondary[0].missing)
         assertEquals(listOf("me", "ben"), result.secondary[0].matched)
+        assertTrue(result.secondary[0].absent.isEmpty())
     }
 
     @Test

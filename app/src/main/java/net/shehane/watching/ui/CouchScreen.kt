@@ -242,6 +242,12 @@ private fun CouchBar(library: Library, seated: Set<String>, onToggle: (String) -
 private fun summaryLine(library: Library, seated: Set<String>, result: Couch.Result): String {
     if (seated.isEmpty()) return "Nobody seated. Tap a face above and the list fills in."
     val who = Couch.nameList(library, library.people.map { it.id }.filter { it in seated })
+
+    // Counting to zero twice reads badly on a fresh install, and the empty note
+    // below says what to do about it.
+    if (result.primary.isEmpty() && result.secondary.isEmpty()) {
+        return if (seated.size == 1) "$who, on your own." else "$who, on the couch."
+    }
     return "$who — ${result.primary.size} you are all part-way through, " +
         "${result.secondary.size} that only some of you are on."
 }
@@ -336,8 +342,15 @@ private fun PartialCard(library: Library, match: Couch.Match, onOpen: () -> Unit
                 )
             }
             VGap(4.dp)
+            // Two different reasons to be here, and the difference matters: someone
+            // left behind is a stronger objection than someone watching along.
             BasicText(
-                text = "for ${Couch.nameList(library, match.matched)} — not ${Couch.nameList(library, match.missing)}",
+                text = when {
+                    match.absent.isNotEmpty() ->
+                        "${Couch.nameList(library, match.absent)} would fall behind"
+                    else ->
+                        "for ${Couch.nameList(library, match.matched)} — not ${Couch.nameList(library, match.missing)}"
+                },
                 style = Type.Meta.copy(color = Ink.Cool),
                 maxLines = 1,
                 overflow = Clip,

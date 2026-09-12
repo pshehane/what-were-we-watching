@@ -74,18 +74,27 @@ object Starter {
 
     // ----------------------------------------------------------------- seeding
 
-    fun seed(meId: String): Library {
+    fun seed(meId: String): Library = seedFromJson(decode(), meId)
+
+    /**
+     * Split out from [seed] so first-run seeding can be tested on the JVM: this
+     * half touches no Android class. A null, blank or malformed document falls
+     * back to the generic seed rather than failing, because a bad starter file
+     * must never be the reason the app will not open.
+     */
+    internal fun seedFromJson(text: String?, meId: String): Library {
         val now = Clock.now()
-        val file = decode()
+        if (text.isNullOrBlank()) return generic(meId, now)
+        val file = runCatching { json.decodeFromString(StarterFile.serializer(), text) }.getOrNull()
         return if (file == null) generic(meId, now) else fromFile(file, meId, now)
     }
 
-    private fun decode(): StarterFile? {
+    /** The embedded starter file, or null when this build had none. */
+    private fun decode(): String? {
         val raw = BuildConfig.STARTER_SEED
         if (raw.isBlank()) return null
         return runCatching {
-            val text = String(Base64.decode(raw, Base64.DEFAULT), Charsets.UTF_8)
-            json.decodeFromString(StarterFile.serializer(), text)
+            String(Base64.decode(raw, Base64.DEFAULT), Charsets.UTF_8)
         }.getOrNull()
     }
 

@@ -15,8 +15,10 @@ object Couch {
         val show: Show,
         /** Seated people who are on this show. */
         val matched: List<String>,
-        /** Seated people who are not. Empty for a full match. */
+        /** Seated people who are NOT on this show. They would be watching along. */
         val missing: List<String>,
+        /** People on this show who are NOT seated. They would fall behind. */
+        val absent: List<String>,
     )
 
     data class Result(
@@ -33,10 +35,16 @@ object Couch {
     /**
      * [seated] is the set of person ids on the couch.
      *
-     * A show is a full match only when *every* seated person is on it. A show all
-     * four watch is deliberately not a full match when only two are seated: the
-     * other two would fall behind. Carrying on without them is an edit to the
-     * show's people, not a softening of this rule.
+     * A full match needs the show's people and the couch to be the SAME set. Two
+     * things demote a show, and both matter:
+     *
+     *  - someone seated is not on the show, so they would be watching along; or
+     *  - someone on the show is not seated, so they would fall behind.
+     *
+     * The second is the one that is easy to get wrong. A show all four watch is
+     * deliberately not a full match when only two are sitting down. Carrying on
+     * without the other two is an edit to the show's people, not a softening of
+     * this rule.
      */
     fun build(library: Library, seated: Set<String>): Result {
         val primary = mutableListOf<Match>()
@@ -56,15 +64,21 @@ object Couch {
             if (matched.isEmpty()) continue
 
             val missing = seated.filter { it !in watchers }
-            val match = Match(show, matched, missing)
-            if (missing.isEmpty()) primary += match else secondary += match
+            val absent = watchers.filter { it !in seated }.sorted()
+            val match = Match(show, matched, missing, absent)
+
+            if (missing.isEmpty() && absent.isEmpty()) primary += match else secondary += match
         }
 
         return Result(
             primary = primary.sortedWith(recency),
             // Most of the room first, then the most recently watched.
+            // Most of the room first, then the fewest people left behind, then
+            // the most recently watched.
             secondary = secondary.sortedWith(
-                compareByDescending<Match> { it.matched.size }.then(recency)
+                compareByDescending<Match> { it.matched.size }
+                    .thenBy { it.absent.size }
+                    .then(recency)
             ),
             snoozed = snoozed.sortedBy { Clock.parseOrNull(it.snoozeUntil) },
             abandoned = abandoned.sortedBy { it.title.lowercase() },

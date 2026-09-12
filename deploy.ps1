@@ -63,7 +63,12 @@ if ($LASTEXITCODE -ne 0) { Write-Host "Install failed." -ForegroundColor Red; ex
 # force-stop first, or am start can resume the old process and show old code.
 Write-Host "Launching..." -ForegroundColor Cyan
 & $adb @target shell am force-stop $package
+Start-Sleep -Milliseconds 400
+# am start writes a harmless "already top-most" warning to stderr when the app
+# survived the force-stop. That is not a failure, so it must not stop the script.
+$ErrorActionPreference = "Continue"
 & $adb @target shell am start -n "$package/net.shehane.watching.MainActivity" | Out-Null
+$ErrorActionPreference = "Stop"
 
 Write-Host "Done." -ForegroundColor Green
 

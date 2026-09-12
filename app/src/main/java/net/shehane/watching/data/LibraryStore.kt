@@ -292,6 +292,9 @@ class LibraryStore(private val context: Context) {
         )
     }
 
+    /** Which summariser "Catch me up" should prefer. */
+    fun setSummaryMode(mode: String) = update { it.copy(summaryMode = mode) }
+
     /** Where you normally are. Streaming rights are sold by country. */
     fun setHomeCountry(code: String) = update { lib ->
         lib.copy(homeCountry = code.uppercase())

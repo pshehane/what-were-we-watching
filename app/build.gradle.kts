@@ -88,6 +88,9 @@ android {
         // are embedded here. Base64 so arbitrary JSON needs no escaping.
         // Without the file the app seeds one person called "Me" and says so.
         buildConfigField("String", "STARTER_SEED", "\"$starterSeed\"")
+        // Empty in a clone of this repo, which is the point: the cloud summariser
+        // is simply not offered unless whoever built it supplied a key.
+        buildConfigField("String", "GEMINI_API_KEY", "\"${credential("gemini", "apiKey", "GEMINI_API_KEY")}\"")
     }
 
     compileOptions {
@@ -158,6 +161,10 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(libs.google.api.client.android)
     implementation(libs.google.api.services.drive)
+
+    // On-device summarising. Only some phones have AICore, so every call site
+    // has to cope with it simply not being there.
+    implementation(libs.mlkit.genai.summarization)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

@@ -37,21 +37,27 @@ object Http {
         headers: Map<String, String> = emptyMap(),
         body: ByteArray? = null,
         contentType: String? = null,
+        readTimeoutMs: Int = DEFAULT_READ_TIMEOUT,
     ): String = withContext(Dispatchers.IO) {
         val h = if (contentType != null) headers + ("Content-Type" to contentType) else headers
-        request(method, url, h, body).decodeToString()
+        request(method, url, h, body, readTimeoutMs).decodeToString()
     }
+
+    /** Long enough for a model to think. Everything else uses the default. */
+    const val MODEL_READ_TIMEOUT = 60_000
+    private const val DEFAULT_READ_TIMEOUT = 20_000
 
     private fun request(
         method: String,
         url: String,
         headers: Map<String, String>,
         body: ByteArray?,
+        readTimeoutMs: Int = DEFAULT_READ_TIMEOUT,
     ): ByteArray {
         val conn = (URL(url).openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = 12_000
-            readTimeout = 20_000
+            readTimeout = readTimeoutMs
             instanceFollowRedirects = true
             setRequestProperty("Accept", "application/json")
             headers.forEach { (k, v) -> setRequestProperty(k, v) }

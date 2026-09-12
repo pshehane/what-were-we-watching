@@ -59,6 +59,8 @@ fun ProfilesScreen(
     onSignOut: () -> Unit,
     onSyncNow: () -> Unit,
     onAbout: () -> Unit,
+    cloudSummaryAvailable: Boolean,
+    onSetSummaryMode: (String) -> Unit,
     insets: PaddingValues,
 ) {
     var openService by remember { mutableStateOf<String?>(library.services.firstOrNull()?.id) }
@@ -174,6 +176,53 @@ fun ProfilesScreen(
                 VGap(26.dp)
             }
 
+            // --- how catch-up gets written ---
+            item("summary") {
+                SectionHeader("CATCH ME UP", Ink.Faint)
+                VGap(9.dp)
+                BasicText(
+                    "Which model writes the recap on a show screen. Whatever is not " +
+                        "available falls through to the next one down.",
+                    style = Type.BodyTight,
+                )
+                VGap(12.dp)
+
+                SummaryChoice(
+                    title = "A cloud model",
+                    detail = if (cloudSummaryAvailable) {
+                        "Gemini. Writes prose, one point for the story and one for each " +
+                            "main character. Needs a network. Sends the synopses you have " +
+                            "already seen, and nothing else."
+                    } else {
+                        "Not in this build. The key is kept outside the repository, so a " +
+                            "copy of this app from GitHub has no cloud option at all."
+                    },
+                    chosen = library.summaryMode == Library.SUMMARY_CLOUD,
+                    enabled = cloudSummaryAvailable,
+                    onPick = { onSetSummaryMode(Library.SUMMARY_CLOUD) },
+                )
+                VGap(8.dp)
+                SummaryChoice(
+                    title = "This phone",
+                    detail = "AICore, free and offline. It writes up to three bullet " +
+                        "points and cannot be told what to put in them, so the shape is " +
+                        "its choice rather than ours. Not every phone has it.",
+                    chosen = library.summaryMode == Library.SUMMARY_DEVICE,
+                    enabled = true,
+                    onPick = { onSetSummaryMode(Library.SUMMARY_DEVICE) },
+                )
+                VGap(8.dp)
+                SummaryChoice(
+                    title = "No summary",
+                    detail = "The episode synopses from TMDB, as they are. No model, " +
+                        "nothing sent anywhere, and every detail kept.",
+                    chosen = library.summaryMode == Library.SUMMARY_NONE,
+                    enabled = true,
+                    onPick = { onSetSummaryMode(Library.SUMMARY_NONE) },
+                )
+                VGap(26.dp)
+            }
+
             // --- drive ---
             item("sync") {
                 SectionHeader("CLOUD COPY", Ink.Faint)
@@ -193,6 +242,45 @@ fun ProfilesScreen(
                     Draw.Chevron(15.dp, Ink.Ghost)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SummaryChoice(
+    title: String,
+    detail: String,
+    chosen: Boolean,
+    enabled: Boolean,
+    onPick: () -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(13.dp))
+            .border(
+                1.dp,
+                if (chosen && enabled) Ink.Amber else Ink.Line,
+                RoundedCornerShape(13.dp),
+            )
+            .clickable(enabled = enabled, onClick = onPick)
+            .padding(13.dp),
+    ) {
+        Draw.Radio(selected = chosen && enabled)
+        HGap(11.dp)
+        Column {
+            BasicText(
+                title,
+                style = Type.Label.copy(color = if (enabled) Ink.Text else Ink.Ghost),
+            )
+            VGap(4.dp)
+            BasicText(
+                detail,
+                style = Type.Meta.copy(
+                    color = if (enabled) Ink.Faint else Ink.Ghost,
+                    lineHeight = 15.sp,
+                ),
+            )
         }
     }
 }

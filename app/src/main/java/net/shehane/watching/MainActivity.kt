@@ -99,6 +99,7 @@ private fun App() {
     val catchUpLoading by vm.catchUpLoading.collectAsStateWithLifecycle()
     val seasonCache by vm.seasons.collectAsStateWithLifecycle()
     val seasonsLoading by vm.seasonsLoading.collectAsStateWithLifecycle()
+    val recapped by vm.recapped.collectAsStateWithLifecycle()
 
     val insets = WindowInsets.safeDrawing.asPaddingValues()
 
@@ -204,6 +205,9 @@ private fun App() {
                         seasons = vm.seasonsFor(show, seasonCache),
                         seasonsLoading = seasonsLoading,
                         onNeedSeasons = { vm.loadSeasons(show, it) },
+                        recapped = recapped,
+                        onNeedRecap = { recap, upTo -> vm.summarise(show, recap, upTo) },
+                        onCloseRecap = vm::clearRecap,
                         onDelete = { vm.deleteShow(show.id) },
                         insets = insets,
                     )
@@ -227,6 +231,8 @@ private fun App() {
                     onSignOut = vm::signOut,
                     onSyncNow = { vm.syncNow() },
                     onAbout = { vm.go(Screen.About) },
+                    cloudSummaryAvailable = vm.cloudAvailable,
+                    onSetSummaryMode = vm::setSummaryMode,
                     insets = insets,
                 )
             }

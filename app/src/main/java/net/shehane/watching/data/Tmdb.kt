@@ -75,6 +75,44 @@ object Tmdb {
         return json.decodeFromString(SearchResponse.serializer(), body).results
     }
 
+    // -------------------------------------------------------------------- cast
+
+    @Serializable
+    private data class AggregateCredits(val cast: List<CastMember> = emptyList())
+
+    @Serializable
+    data class CastMember(
+        val name: String = "",
+        val order: Int = 999,
+        @SerialName("total_episode_count") val episodes: Int = 0,
+        val roles: List<Role> = emptyList(),
+    ) {
+        val character: String? get() = roles.firstOrNull()?.character?.takeIf { it.isNotBlank() }
+    }
+
+    @Serializable
+    data class Role(val character: String = "")
+
+    /**
+     * The people the show is actually about.
+     *
+     * TMDB lists everyone who ever appeared, fifteen hundred of them for a long
+     * running show, so this keeps only those billed near the top who are in a good
+     * share of the episodes. Guest stars fail both halves of that.
+     */
+    suspend fun mainCast(tmdbId: Int, episodeCount: Int?, limit: Int = 8): List<CastMember> {
+        if (!isConfigured) return emptyList()
+        val url = withKey("$BASE/tv/$tmdbId/aggregate_credits?language=en-US")
+        val body = Http.getString(url, authHeaders())
+        val all = json.decodeFromString(AggregateCredits.serializer(), body).cast
+
+        val enough = if (episodeCount != null && episodeCount > 0) episodeCount / 2 else 0
+        return all
+            .filter { it.order < 15 && it.episodes >= enough && it.character != null }
+            .sortedWith(compareByDescending<CastMember> { it.episodes }.thenBy { it.order })
+            .take(limit)
+    }
+
     // ------------------------------------------------------------------ season
 
     @Serializable

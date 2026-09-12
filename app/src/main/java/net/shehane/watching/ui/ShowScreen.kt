@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,7 +40,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.shehane.watching.data.Clock
+import net.shehane.watching.MainViewModel
 import net.shehane.watching.data.Recap
+import net.shehane.watching.data.Summary
 import net.shehane.watching.data.Tmdb
 import net.shehane.watching.data.Share
 import net.shehane.watching.data.LibraryStore
@@ -73,6 +76,9 @@ fun ShowScreen(
     seasons: Map<Int, Tmdb.Season>,
     seasonsLoading: Boolean,
     onNeedSeasons: (List<Int>) -> Unit,
+    recapped: MainViewModel.Recapped?,
+    onNeedRecap: (Recap.CatchUp, String) -> Unit,
+    onCloseRecap: () -> Unit,
     onDelete: () -> Unit,
     insets: PaddingValues,
 ) {
@@ -656,15 +662,87 @@ fun ShowScreen(
                     NextUpBody(Recap.nextUp(show, seasons), seasonsLoading)
                 }
 
-                Asking.CATCH_UP -> AskSheet(
-                    title = "Catch me up",
-                    subtitle = "Everything before $label",
-                    onDismiss = { asking = null },
-                    bottomInset = insets,
-                ) {
-                    CatchUpBody(Recap.catchUp(show, seasons), seasonsLoading, label)
+                Asking.CATCH_UP -> {
+                    val recap = Recap.catchUp(show, seasons)
+                    // Asked for only once the seasons are in, since a summary of
+                    // half the history would be wrong rather than incomplete.
+                    LaunchedEffect(recap.recent.size, recap.earlier.size, seasonsLoading) {
+                        if (!seasonsLoading && !recap.isEmpty) onNeedRecap(recap, label)
+                    }
+                    AskSheet(
+                        title = "Catch me up",
+                        subtitle = "Everything before $label",
+                        onDismiss = { asking = null; onCloseRecap() },
+                        bottomInset = insets,
+                    ) {
+                        CatchUpBody(recap, seasonsLoading, label, recapped)
+                    }
                 }
             }
+        }
+    }
+}
+
+/**
+ * The written recap, above the synopses it was written from.
+ *
+ * The synopses stay either way. A model can be wrong, and the thing it was built
+ * from should always be one scroll away.
+ */
+@Composable
+private fun Summarised(recapped: MainViewModel.Recapped?) {
+    if (recapped == null) return
+
+    val label = when {
+        recapped.working -> "Writing it"
+        recapped.source == Summary.Source.CLOUD -> "Written by Gemini"
+        recapped.source == Summary.Source.DEVICE ->
+            recapped.modelName?.let { "Written on this phone by $it" } ?: "Written on this phone"
+        else -> null
+    }
+
+    val why = when (recapped.fallback) {
+        Summary.Fallback.NO_KEY -> "This build has no cloud key."
+        Summary.Fallback.NO_NETWORK -> "No network, so the phone wrote it."
+        Summary.Fallback.NO_DEVICE_MODEL ->
+            "The on-device summariser is not available on this phone."
+        Summary.Fallback.FAILED -> "The summariser did not answer."
+        null -> null
+    }
+
+    Column {
+        if (label != null) {
+            SectionHeader(label.uppercase(), Ink.Amber)
+            VGap(10.dp)
+        }
+
+        when {
+            recapped.working -> {
+                BasicText("Reading it back…", style = Type.Body.copy(color = Ink.Faint))
+                VGap(16.dp)
+            }
+
+            recapped.text != null -> {
+                for (point in Summary.bullets(recapped.text)) {
+                    Row {
+                        BasicText("•", style = Type.Body.copy(color = Ink.Amber))
+                        HGap(9.dp)
+                        BasicText(point, style = Type.Body.copy(color = Ink.Text))
+                    }
+                    VGap(9.dp)
+                }
+                VGap(6.dp)
+            }
+        }
+
+        if (why != null) {
+            BasicText(why, style = Type.Meta)
+            VGap(10.dp)
+        }
+
+        if (recapped.text != null || recapped.working) {
+            SectionHeader("WHAT IT WAS WRITTEN FROM", Ink.Faint)
+            VGap(12.dp)
         }
     }
 }
@@ -767,13 +845,19 @@ private fun NextUpBody(next: Recap.NextUp?, loading: Boolean) {
 }
 
 @Composable
-private fun CatchUpBody(recap: Recap.CatchUp, loading: Boolean, position: String) {
+private fun CatchUpBody(
+    recap: Recap.CatchUp,
+    loading: Boolean,
+    position: String,
+    recapped: MainViewModel.Recapped?,
+) {
     if (recap.isEmpty) {
         EmptyNote(if (loading) "Reading back through the seasons…" else "Nothing behind you yet.")
         return
     }
 
     Column {
+        Summarised(recapped)
         for (entry in recap.recent) {
             BasicText("S${entry.season} E${entry.episode} · ${entry.title}", style = Type.ShowTitleSm)
             VGap(5.dp)

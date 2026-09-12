@@ -1,6 +1,9 @@
 package net.shehane.watching
 
 import android.app.Application
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -12,8 +15,12 @@ import kotlinx.coroutines.launch
 import net.shehane.watching.data.Clock
 import net.shehane.watching.data.Couch
 import net.shehane.watching.data.DriveSync
+import net.shehane.watching.data.Gemini
 import net.shehane.watching.data.LibraryStore
+import net.shehane.watching.data.OnDevice
+import net.shehane.watching.data.Recap
 import net.shehane.watching.data.Suggest
+import net.shehane.watching.data.Summary
 import net.shehane.watching.data.Tmdb
 import net.shehane.watching.model.Library
 import net.shehane.watching.model.Position
@@ -306,6 +313,121 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             }
             _seasonsLoading.value = false
         }
+    }
+
+    // ----------------------------------------------------------- summarising
+
+    data class Recapped(
+        val text: String? = null,
+        val source: Summary.Source = Summary.Source.RAW,
+        val fallback: Summary.Fallback? = null,
+        val modelName: String? = null,
+        val working: Boolean = false,
+    )
+
+    private val _recapped = MutableStateFlow<Recapped?>(null)
+    val recapped: StateFlow<Recapped?> = _recapped.asStateFlow()
+
+    private var recapJob: Job? = null
+
+    /** Null until asked once, because the check itself costs a round trip to AICore. */
+    private var deviceModelReady: Boolean? = null
+
+    val cloudAvailable: Boolean get() = Gemini.isConfigured
+
+    private fun online(): Boolean {
+        val cm = getApplication<Application>()
+            .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }
+
+    fun setSummaryMode(mode: String) {
+        store.setSummaryMode(mode)
+        clearRecap()
+        pushSoon()
+    }
+
+    fun clearRecap() {
+        recapJob?.cancel()
+        _recapped.value = null
+    }
+
+    /**
+     * Walks down from the chosen summariser to whatever actually works.
+     *
+     * Every step can fail for an ordinary reason, so a failure is never an error
+     * on screen: it moves to the next thing and the sheet says which one answered
+     * and why it was not the one you picked.
+     */
+    fun summarise(show: Show, recap: Recap.CatchUp, upTo: String) {
+        if (_recapped.value != null) return
+        val mode = library.value.summaryMode
+        if (mode == Library.SUMMARY_NONE || recap.isEmpty) return
+
+        recapJob?.cancel()
+        recapJob = viewModelScope.launch {
+            _recapped.value = Recapped(working = true)
+
+            if (deviceModelReady == null) {
+                deviceModelReady = OnDevice.isAvailable(getApplication())
+            }
+            val (source, why) = Summary.resolve(
+                mode = mode,
+                hasCloudKey = Gemini.isConfigured,
+                hasNetwork = online(),
+                hasDeviceModel = deviceModelReady == true,
+            )
+
+            val body = Summary.sourceText(recap)
+            when (source) {
+                Summary.Source.CLOUD -> {
+                    val cast = runCatching {
+                        show.tmdbId?.let { Tmdb.mainCast(it, show.episodeCount) } ?: emptyList()
+                    }.getOrDefault(emptyList())
+
+                    runCatching {
+                        Gemini.summarise(
+                            Summary.prompt(
+                                show = show,
+                                upTo = upTo,
+                                characters = cast.mapNotNull { it.character },
+                                body = body,
+                            )
+                        )
+                    }
+                        .onSuccess { _recapped.value = Recapped(it, Summary.Source.CLOUD, why) }
+                        .onFailure {
+                            android.util.Log.w("Watching.Summary", "cloud summarise failed", it)
+                            runOnDevice(body, recap, why = Summary.Fallback.FAILED)
+                        }
+                }
+
+                Summary.Source.DEVICE -> runOnDevice(body, recap, why)
+                Summary.Source.RAW -> _recapped.value = Recapped(null, Summary.Source.RAW, why)
+            }
+        }
+    }
+
+    private suspend fun runOnDevice(body: String, recap: Recap.CatchUp, why: Summary.Fallback?) {
+        if (deviceModelReady != true) {
+            _recapped.value = Recapped(
+                null,
+                Summary.Source.RAW,
+                why ?: Summary.Fallback.NO_DEVICE_MODEL,
+            )
+            return
+        }
+        val bullets = Summary.deviceBulletCount(recap.recent.size.coerceAtMost(3))
+        runCatching { OnDevice.summarise(getApplication(), body, bullets) }
+            .onSuccess {
+                _recapped.value = Recapped(it.text, Summary.Source.DEVICE, why, it.modelName)
+            }
+            .onFailure {
+                android.util.Log.w("Watching.Summary", "on-device summarise failed", it)
+                _recapped.value = Recapped(null, Summary.Source.RAW, Summary.Fallback.FAILED)
+            }
     }
 
     /** Asked once per show per session, so reopening a screen is free. */

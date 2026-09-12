@@ -21,11 +21,25 @@ data class Library(
      * the wishlist compares against when you are travelling.
      */
     val homeCountry: String = "US",
+    /**
+     * Which summariser "Catch me up" should prefer. One of [SUMMARY_CLOUD],
+     * [SUMMARY_DEVICE] or [SUMMARY_NONE].
+     *
+     * A preference, not a guarantee. Cloud needs a key built in and a network;
+     * on-device needs a phone with AICore. Whatever is unavailable falls through
+     * to the next thing, and the raw synopses are always there underneath.
+     */
+    val summaryMode: String = SUMMARY_DEVICE,
     val shows: List<Show> = emptyList(),
     val deleted: List<Tombstone> = emptyList(),
 ) {
     companion object {
         const val SCHEMA_VERSION = 1
+
+        const val SUMMARY_CLOUD = "cloud"
+        const val SUMMARY_DEVICE = "device"
+        /** No summarising at all: the episode synopses, as they come from TMDB. */
+        const val SUMMARY_NONE = "none"
     }
 
     fun personOrNull(id: String): Person? = people.firstOrNull { it.id == id }

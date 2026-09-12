@@ -97,40 +97,49 @@
       "title": "1 . Ideas"
     },
     {
-      "file": "WhyThis.dc.html",
+      "file": "Swipe.dc.html",
       "x": 470,
       "y": 0,
       "w": 390,
       "h": 844,
       "page": "page-3",
-      "title": "2 . Why this one"
+      "title": "2 . Clearing one"
     },
     {
-      "file": "CatchUp.dc.html",
+      "file": "WhyThis.dc.html",
       "x": 940,
       "y": 0,
       "w": 390,
       "h": 844,
       "page": "page-3",
-      "title": "3 . Catching it up"
+      "title": "3 . Why this one"
     },
     {
-      "file": "WhatItKnows.dc.html",
+      "file": "CatchUp.dc.html",
       "x": 1410,
       "y": 0,
       "w": 390,
       "h": 844,
       "page": "page-3",
-      "title": "4 . What it uses"
+      "title": "4 . Catching it up"
     },
     {
-      "file": "NotYet.dc.html",
+      "file": "WhatItKnows.dc.html",
       "x": 1880,
       "y": 0,
       "w": 390,
       "h": 844,
       "page": "page-3",
-      "title": "5 . Before it knows you"
+      "title": "5 . What it uses"
+    },
+    {
+      "file": "NotYet.dc.html",
+      "x": 2350,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-3",
+      "title": "6 . Before it knows you"
     }
   ],
   "annotations": [
@@ -194,41 +203,49 @@
       "id": "n-sugg",
       "page": "page-3",
       "x": 0,
-      "y": -320,
+      "y": -330,
       "w": 390,
-      "text": "1 . Ideas\nThree sections, ordered by how much guessing each one does.\nReady tonight does none: your own wishlist, crossed with the services you pay for, filtered to the people on the couch. Stalled does none either, and offers a decision rather than a nudge.\nOnly the third section is a guess, and its heading names the show whose taste it borrowed.\nEvery guessed row carries three buttons. The heart means we have already seen this and liked it: the show is filed as finished, so it never comes up again and it starts counting towards future suggestions. Thumbs down means no, and is counted alongside the shows you shelved. The plus is the wishlist, for something you have not seen and want to.\nThe middle row shows what a heart leaves behind. The row dims in place with an undo rather than vanishing, so a mistap is visible and reversible."
+      "text": "1 . Ideas\nThree sections, ordered by how much guessing each one does.\nReady tonight does none: your own wishlist, crossed with the services you pay for, filtered to the people on the couch. Stalled does none either, and offers a decision rather than a nudge.\nOnly the third section is a guess, and its heading names the show whose taste it borrowed. Its rows can be swiped away or tapped: loved it, didn't love it, or the plus for the wishlist.\nCounterpart has just been swiped, so it is gone from the list and the toast is holding the way back."
+    },
+    {
+      "id": "n-swipe",
+      "page": "page-3",
+      "x": 470,
+      "y": -330,
+      "w": 390,
+      "text": "2 . Clearing one\nA suggestion can be perfectly fair and still be finished business, usually because we watched it years ago. Both swipes clear it and both count as a vote, so getting rid of a row always teaches it something.\nRight is loved it. Left is didn't love it, which covers both a show that let us down and one we are never going to get to.\nThe buttons stay on the row. Swiping is the shortcut, not the only way in, and the same gesture already shelves a show on the couch screen.\nThen the toast, for five seconds, with the bar running down as the time does. Undo puts the row back where it was and removes the vote. After that it is a normal edit on the show itself."
     },
     {
       "id": "n-why",
       "page": "page-3",
-      "x": 470,
-      "y": -320,
+      "x": 940,
+      "y": -330,
       "w": 390,
-      "text": "2 . Why this one\nEvery suggestion can be opened to see its reasoning, in plain sentences citing shows by name. One of those sentences is about a heart, which is where the heart's meaning gets explained.\nThe screen also argues against itself. A similar show you already shelved is listed, because that is worth knowing before committing to three seasons.\nThe same three outcomes as the row, with words on them. Later pushes it out ninety days instead of voting."
+      "text": "3 . Why this one\nEvery suggestion can be opened to see its reasoning, in plain sentences citing shows by name. One of them is about a vote, which is where a vote's meaning gets explained.\nThe screen also argues against itself. A similar show you already shelved is listed, because that is worth knowing before committing to three seasons.\nThe same two verdicts as the swipes, with words on them. Later pushes it out ninety days without voting either way."
     },
     {
       "id": "n-catchup",
       "page": "page-3",
-      "x": 940,
-      "y": -320,
+      "x": 1410,
+      "y": -330,
       "w": 390,
-      "text": "3 . Catching it up\nThe fast way to vote, and the answer to a cold start. A grid of shows with a heart and a thumbs down on each, so marking ten years of viewing takes about a minute.\nMost tiles get no tap at all, which is the point: you are looking for the few you have seen, not answering every one.\nA heart files the show as finished without asking for a service, a profile or an episode number, because you are not going to supply those for something you watched in 2019.\nThe counter at the top is the reason to keep going. Reachable from the cold-start screen and from settings."
+      "text": "4 . Catching it up\nThe fast way to vote, and the answer to a cold start. A grid with both verdicts on every tile, so marking years of viewing takes about a minute.\nMost tiles get no tap at all, which is the point: you are looking for the few you have seen, not answering every one.\nEither verdict files the show as finished without asking for a service, a profile or an episode number, because you are not going to supply those for something you watched in 2019.\nThe counter at the top is the reason to keep going. Reachable from the cold-start screen and from settings."
     },
     {
       "id": "n-knows",
       "page": "page-3",
-      "x": 1410,
-      "y": -320,
+      "x": 1880,
+      "y": -330,
       "w": 390,
-      "text": "4 . What it uses\nEach signal is named, counted, and switchable. Your votes are listed first, because they are the only signal you can add on purpose.\nThe counts come from the real library, so the screen doubles as a summary of what you have recorded.\nThe second half says what it never reads. That list matters more than the first: the app has no login to any streaming service and cannot get one, which is why its suggestions are worse than Netflix's and also why they are only about you.\nThumbed-down shows are kept, not forgotten, so you can undo a no."
+      "text": "5 . What it uses\nEach signal is named, counted, and switchable. Your votes are listed first, because they are the only signal you can add on purpose.\nThe counts come from the real library, so the screen doubles as a summary of what you have recorded.\nThe second half says what it never reads. That list matters more than the first: the app has no login to any streaming service and cannot get one, which is why its suggestions are worse than Netflix's and also why they are only about you.\nShows you did not love are kept, not forgotten, so you can undo one long after the toast has gone."
     },
     {
       "id": "n-notyet",
       "page": "page-3",
-      "x": 1880,
-      "y": -320,
+      "x": 2350,
+      "y": -330,
       "w": 390,
-      "text": "5 . Before it knows you\nA new library has nothing to reason from, and the screen says so instead of inventing something.\nIt still fills the screen honestly. Ready tonight works from day one, because a wishlist entry plus a service you pay for needs no history. The generic list is labelled generic, and now carries the same two votes, so even that block is something you can answer rather than only look at.\nThe counter gives a reason to start hearting, and the button goes straight to screen 3."
+      "text": "6 . Before it knows you\nA new library has nothing to reason from, and the screen says so instead of inventing something.\nIt still fills the screen honestly. Ready tonight works from day one, because a wishlist entry plus a service you pay for needs no history. The generic list is labelled generic, and carries the same two verdicts, so even that block is something you can answer rather than only look at.\nThe counter gives a reason to start voting, and the button goes straight to screen 4."
     }
   ],
   "launch": {

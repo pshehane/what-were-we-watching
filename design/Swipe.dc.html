@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; }
+    .lane { position: relative; height: 63px; border-radius: 12px; overflow: hidden; }
+    .card { position: absolute; top: 0; bottom: 0; background: oklch(0.17 0.012 65); display: flex; align-items: center; gap: 10px; padding: 0 10px; }
+    .ttl { font-family: 'Instrument Serif', Georgia, serif; font-size: 16px; line-height: 1.05; }
+    .sub { font-size: 10.5px; color: oklch(0.58 0.010 75); padding-top: 2px; }
+    .art { width: 34px; height: 49px; border-radius: 6px; flex-shrink: 0; position: relative; overflow: hidden; }
+    .blob { position: absolute; width: 28px; height: 28px; border-radius: 50%; left: 8px; top: 6px; }
+    .lbl { font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; }
+    .cap { font-size: 11px; line-height: 1.5; color: oklch(0.58 0.010 75); padding-top: 9px; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; overflow: hidden; position: relative; background: oklch(0.17 0.012 65); color: oklch(0.95 0.011 85); font-family: 'Space Grotesk', system-ui, sans-serif;">
+
+  <div style="height: 44px;"></div>
+
+  <div style="padding: 0 18px;">
+    <h1 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-size: 27px; font-weight: 400; line-height: 1.1;">Clearing a suggestion</h1>
+    <div style="font-size: 12.5px; line-height: 1.55; color: oklch(0.68 0.011 85); padding-top: 10px;">
+      A suggestion can be a fair one and still be finished business. Both swipes take it off the list, and both count as a vote.
+    </div>
+  </div>
+
+  <div style="padding: 20px 18px 0;">
+
+    <!-- resting -->
+    <div style="display: flex; align-items: center; gap: 8px; padding-bottom: 10px;">
+      <span class="lbl" style="color: oklch(0.62 0.010 75);">AT REST</span>
+      <span style="flex-grow: 1; height: 1px; background: oklch(0.24 0.011 65);"></span>
+    </div>
+
+    <div class="lane" style="background: oklch(0.17 0.012 65);">
+      <div class="card" style="left: 0; right: 0; padding: 0;">
+        <div class="art" style="background: oklch(0.30 0.04 60);"><div class="blob" style="background: oklch(0.72 0.11 55);"></div></div>
+        <div style="flex-grow: 1; min-width: 0;">
+          <div class="ttl">Counterpart</div>
+          <div class="sub">Starz · 2 seasons</div>
+        </div>
+        <div style="display: flex; gap: 6px; flex-shrink: 0;">
+          <div style="width: 33px; height: 33px; border-radius: 50%; border: 1px solid oklch(0.33 0.011 65); display: flex; align-items: center; justify-content: center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.74 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+          </div>
+          <div style="width: 33px; height: 33px; border-radius: 50%; border: 1px solid oklch(0.33 0.011 65); display: flex; align-items: center; justify-content: center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.74 0.011 85)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+          </div>
+          <div style="width: 33px; height: 33px; border-radius: 50%; border: 1px solid oklch(0.45 0.09 72); display: flex; align-items: center; justify-content: center;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="oklch(0.80 0.14 72)" stroke-width="2.3" stroke-linecap="round"><path d="M12 5 L12 19"></path><path d="M5 12 L19 12"></path></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cap">The buttons stay. Swiping is the shortcut, not the only way in, and the plus is still the wishlist.</div>
+
+    <!-- right -->
+    <div style="display: flex; align-items: center; gap: 8px; padding: 20px 0 10px;">
+      <span class="lbl" style="color: oklch(0.72 0.15 25);">DRAG RIGHT &mdash; LOVED IT</span>
+      <span style="flex-grow: 1; height: 1px; background: oklch(0.24 0.011 65);"></span>
+    </div>
+
+    <div class="lane" style="background: oklch(0.40 0.12 25);">
+      <div style="position: absolute; inset: 0; display: flex; align-items: center; gap: 9px; padding-left: 17px;">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="oklch(0.97 0.02 25)" stroke="oklch(0.97 0.02 25)" stroke-width="1.9" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        <span style="font-size: 13px; font-weight: 700; color: oklch(0.97 0.02 25);">Loved it</span>
+      </div>
+      <div class="card" style="left: 124px; right: -124px;">
+        <div class="art" style="background: oklch(0.30 0.04 60);"><div class="blob" style="background: oklch(0.72 0.11 55);"></div></div>
+        <div style="flex-grow: 1; min-width: 0;">
+          <div class="ttl">Counterpart</div>
+          <div class="sub">Starz · 2 seasons</div>
+        </div>
+      </div>
+    </div>
+    <div class="cap">We watched it and it was good. Filed as finished and liked, which is the strongest thing you can tell it.</div>
+
+    <!-- left -->
+    <div style="display: flex; align-items: center; gap: 8px; padding: 20px 0 10px;">
+      <span class="lbl" style="color: oklch(0.78 0.12 235);">DRAG LEFT &mdash; DIDN'T LOVE IT</span>
+      <span style="flex-grow: 1; height: 1px; background: oklch(0.24 0.011 65);"></span>
+    </div>
+
+    <div class="lane" style="background: oklch(0.34 0.08 240);">
+      <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: flex-end; gap: 9px; padding-right: 17px;">
+        <span style="font-size: 13px; font-weight: 700; color: oklch(0.95 0.03 240);">Didn&rsquo;t love it</span>
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="oklch(0.95 0.03 240)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>
+      </div>
+      <div class="card" style="left: -142px; right: 142px;">
+        <div class="art" style="background: oklch(0.30 0.04 60);"><div class="blob" style="background: oklch(0.72 0.11 55);"></div></div>
+        <div style="flex-grow: 1; min-width: 0;">
+          <div class="ttl">Counterpart</div>
+          <div class="sub">Starz · 2 seasons</div>
+        </div>
+      </div>
+    </div>
+    <div class="cap">Seen it and it did not land, or we are simply never going to. Off the list either way, and counted against shows like it.</div>
+
+    <!-- the consequence, and the way out of it -->
+    <div style="display: flex; align-items: center; gap: 8px; padding: 20px 0 10px;">
+      <span class="lbl" style="color: oklch(0.80 0.14 72);">AND THEN, FOR FIVE SECONDS</span>
+      <span style="flex-grow: 1; height: 1px; background: oklch(0.24 0.011 65);"></span>
+    </div>
+
+    <div style="border-radius: 13px; background: oklch(0.255 0.013 65); border: 1px solid oklch(0.34 0.011 65); box-shadow: 0 8px 22px rgba(0,0,0,0.45); overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: 11px; padding: 13px 15px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="oklch(0.72 0.15 25)" stroke="oklch(0.72 0.15 25)" stroke-width="1.9" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        <div style="flex-grow: 1; min-width: 0; font-size: 12.5px; color: oklch(0.90 0.011 85);">Counterpart filed as watched and loved</div>
+        <div style="font-size: 12px; font-weight: 700; letter-spacing: 0.08em; color: oklch(0.80 0.14 72); flex-shrink: 0;">UNDO</div>
+      </div>
+      <div style="height: 3px; background: oklch(0.30 0.011 65);">
+        <div style="width: 62%; height: 3px; background: oklch(0.80 0.14 72);"></div>
+      </div>
+    </div>
+
+    <div class="cap">The bar runs down as the time does. Undo puts the show back exactly where it was and takes the vote back out. After that it is a normal edit on the show itself.</div>
+
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

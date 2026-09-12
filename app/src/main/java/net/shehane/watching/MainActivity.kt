@@ -256,7 +256,11 @@ private fun App() {
             }
 
             is Screen.Ideas -> {
-                LaunchedEffect(library) { vm.loadGuesses() }
+                // Keyed on whether there is a list rather than on the library, so a
+                // vote does not pull the seed out from under the eight rows you
+                // were about to answer. A new seed is picked up when the list runs
+                // out, and when you come back to the tab.
+                LaunchedEffect(guesses.isEmpty()) { vm.loadGuesses() }
                 SuggestScreen(
                     library = library,
                     seatedPeople = library.people.filter { it.id in seated },
@@ -290,7 +294,8 @@ private fun App() {
                     loading = catchUpLoading,
                     finishedCount = vm.suggestions().finishedCount,
                     verdicts = verdicts,
-                    onVote = vm::vote,
+                    onVote = { item, loved -> vm.vote(item, loved, quiet = true) },
+                    onClearVote = vm::clearVote,
                     onBack = { vm.popScreen() },
                     insets = insets,
                 )

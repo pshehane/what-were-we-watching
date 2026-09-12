@@ -50,6 +50,7 @@ fun CatchUpScreen(
     /** tmdb id to verdict, for the ones answered since this screen opened. */
     verdicts: Map<Int, Boolean>,
     onVote: (Tmdb.SearchItem, Boolean) -> Unit,
+    onClearVote: (Tmdb.SearchItem) -> Unit,
     onBack: () -> Unit,
     insets: PaddingValues,
 ) {
@@ -110,6 +111,7 @@ fun CatchUpScreen(
                             height = tileHeight,
                             verdict = verdicts[item.id],
                             onVote = { loved2 -> onVote(item, loved2) },
+                            onClear = { onClearVote(item) },
                         )
                     }
                     // Keep the last row's tiles the same width as every other row.
@@ -123,7 +125,7 @@ fun CatchUpScreen(
                     Column {
                         VGap(6.dp)
                         BasicText(
-                            "$loved marked as loved on this screen. They count straight away.",
+                            "$loved marked as loved on this screen. Tap a mark again to take it back.",
                             style = Type.Meta,
                         )
                     }
@@ -168,6 +170,7 @@ private fun Tile(
     height: Dp,
     verdict: Boolean?,
     onVote: (Boolean) -> Unit,
+    onClear: () -> Unit,
 ) {
     Column(Modifier.width(width)) {
         Box(
@@ -194,8 +197,18 @@ private fun Tile(
                 horizontalArrangement = if (verdict == null) Arrangement.SpaceAround else Arrangement.Center,
             ) {
                 when (verdict) {
-                    true -> Draw.Heart(19.dp, Ink.Rust, filled = true)
-                    false -> Draw.ThumbDown(19.dp, Ink.Cool, filled = false)
+                    // Answered. Tapping the mark takes it back, which is the undo
+                    // a grid wants: the tile is right there and has not moved.
+                    true -> Box(
+                        Modifier.size(31.dp).clickable(onClick = onClear),
+                        contentAlignment = Alignment.Center,
+                    ) { Draw.Heart(19.dp, Ink.Rust, filled = true) }
+
+                    false -> Box(
+                        Modifier.size(31.dp).clickable(onClick = onClear),
+                        contentAlignment = Alignment.Center,
+                    ) { Draw.ThumbDown(19.dp, Ink.Cool, filled = true) }
+
                     null -> {
                         Box(
                             Modifier.size(31.dp).clickable { onVote(true) },

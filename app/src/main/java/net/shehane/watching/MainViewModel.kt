@@ -370,7 +370,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      * the verdict attached, which is the whole point of the fast path: no service,
      * no profile, no episode number.
      */
-    fun vote(item: Tmdb.SearchItem, loved: Boolean) {
+    fun vote(item: Tmdb.SearchItem, loved: Boolean, quiet: Boolean = false) {
         val id = store.addShow(
             title = item.name,
             tmdbId = item.id,
@@ -384,21 +384,44 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         )
         store.vote(id, loved)
 
+        val wasAt = _guesses.value.indexOfFirst { it.id == item.id }
         _guesses.value = _guesses.value.filterNot { it.id == item.id }
-        // The catch-up grid keeps the tile in place and marks it instead, so the
-        // list does not reflow under whichever finger is tapping down it.
         _verdicts.value = _verdicts.value + (item.id to loved)
 
-        say(
-            if (loved) "${item.name} filed as watched and loved"
-            else "${item.name} filed as watched, not loved"
-        ) {
-            store.deleteShow(id)
-            _verdicts.value = _verdicts.value - item.id
-            // Put it back where it was rather than at the end of the list.
-            if (_guesses.value.none { it.id == item.id }) _guesses.value = _guesses.value + item
-            pushSoon()
+        // The grid says no to the toast. Its tile already shows the verdict and
+        // can be tapped to take it back, and a message over the rows you are
+        // working down would cover the next thing you meant to tap.
+        if (!quiet) {
+            say(
+                if (loved) "${item.name} filed as watched and loved"
+                else "${item.name} filed as watched, not loved"
+            ) {
+                store.deleteShow(id)
+                _verdicts.value = _verdicts.value - item.id
+                putBack(item, wasAt)
+                pushSoon()
+            }
         }
+        pushSoon()
+    }
+
+    /**
+     * Back into the list at the place it left, not appended. Undo is supposed to
+     * look like nothing happened, and a row reappearing at the bottom is a
+     * different list from the one you were reading.
+     */
+    private fun putBack(item: Tmdb.SearchItem, at: Int) {
+        if (at < 0 || _guesses.value.any { it.id == item.id }) return
+        val next = _guesses.value.toMutableList()
+        next.add(at.coerceIn(0, next.size), item)
+        _guesses.value = next
+    }
+
+    /** Tapping a tile that already carries a verdict takes the verdict back. */
+    fun clearVote(item: Tmdb.SearchItem) {
+        if (item.id !in _verdicts.value) return
+        library.value.shows.firstOrNull { it.tmdbId == item.id }?.let { store.deleteShow(it.id) }
+        _verdicts.value = _verdicts.value - item.id
         pushSoon()
     }
 
@@ -433,10 +456,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             watchedWith = emptyList(),
             state = Show.STATE_WISHLIST,
         )
+        val wasAt = _guesses.value.indexOfFirst { it.id == item.id }
         _guesses.value = _guesses.value.filterNot { it.id == item.id }
         say("${item.name} is on the wishlist.") {
             store.deleteShow(id)
-            if (_guesses.value.none { it.id == item.id }) _guesses.value = _guesses.value + item
+            putBack(item, wasAt)
             pushSoon()
         }
         pushSoon()
@@ -473,9 +497,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Drops anything voted on since the screen opened, so the grid does not grow stale. */
-    fun catchUpCandidates(): List<Tmdb.SearchItem> =
-        Suggest.unseen(library.value, _catchUp.value)
+    /**
+     * Everything the library has not heard of, plus anything answered on this
+     * screen. Voting adds the show to the library, so without that exception the
+     * tile would vanish the moment it was tapped and every row below would jump
+     * up a place, under a finger already on its way to the next one.
+     */
+    fun catchUpCandidates(): List<Tmdb.SearchItem> {
+        val answered = _verdicts.value.keys
+        val known = library.value.shows.mapNotNull { it.tmdbId }.toSet() - answered
+        return _catchUp.value.filterNot { it.id in known }
+    }
 
     // ------------------------------------------------------------ travelling
 

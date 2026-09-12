@@ -1,0 +1,47 @@
+{
+  "_README": [
+    "EXAMPLE ONLY. Copy this to ~/.watching-starter.json and put your own names in it.",
+    "",
+    "The real file stays in your home directory and never enters this repository.",
+    "The build embeds whatever it finds there into the APK, so the app opens with",
+    "your household already set up instead of an empty screen.",
+    "",
+    "The file is optional. Without it the app seeds one person called 'Me' plus the",
+    "common streaming services with no profiles, and you add the rest from the",
+    "Services and profiles screen. A guided first-run setup is planned for 3.0.",
+    "",
+    "It seeds a FIRST run only. Once the app has written its own library.json,",
+    "editing this file does nothing - change things inside the app instead.",
+    "",
+    "Every field except the names is optional. Colours are handed out in order when",
+    "you leave them out. 'default' names the profile the add screen starts on; if",
+    "you leave it out, the first profile listed is used."
+  ],
+
+  "me": { "name": "Me", "color": "#E9A06A" },
+
+  "people": [
+    { "name": "Ana", "color": "#F09FBC" },
+    { "name": "Ben", "color": "#6FC0DE" },
+    { "name": "Cal", "color": "#85CE9A" }
+  ],
+
+  "services": [
+    {
+      "name": "Netflix",
+      "tint": "#E0574C",
+      "profiles": ["Grown-ups", "Kids"],
+      "default": "Grown-ups"
+    },
+    {
+      "name": "Max",
+      "tint": "#A88BE8",
+      "profiles": ["Family"]
+    },
+    {
+      "name": "Hulu",
+      "tint": "#4FD98F",
+      "profiles": []
+    }
+  ]
+}

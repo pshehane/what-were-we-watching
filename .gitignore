@@ -1,0 +1,34 @@
+# Machine-specific paths. Secrets are not in this repo at all - they live in
+# ~/.api-keys.json, outside every project.
+local.properties
+*.api-keys.json
+credentials.json
+client_secret*.json
+google-services.json
+
+# Signing material. Never in a public repo.
+*.jks
+*.keystore
+
+# Gradle / build output
+.gradle/
+.kotlin/
+build/
+app/build/
+captures/
+.cxx/
+local.log
+
+# IDE and OS
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# The .dc.html artboards under design/ are the source. This is the generated
+# single-file canvas built from them, and it is 2.5 MB.
+what-were-we-watching.html
+
+# Working documents about one household's own setup - names, a signing
+# fingerprint, which cloud project to use. Kept on disk, never published.
+docs/

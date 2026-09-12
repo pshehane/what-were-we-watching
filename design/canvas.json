@@ -1,0 +1,149 @@
+{
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Screens"
+    },
+    {
+      "id": "page-2",
+      "name": "Other directions"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "1 · Couch",
+      "is_interactive": true
+    },
+    {
+      "file": "Add.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "2 · Find it"
+    },
+    {
+      "file": "AddSheet.dc.html",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "3 · Add it"
+    },
+    {
+      "file": "Detail.dc.html",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "4 · The show"
+    },
+    {
+      "file": "States.dc.html",
+      "x": 1880,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "5 · Demoted"
+    },
+    {
+      "file": "Profiles.dc.html",
+      "x": 2350,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-1",
+      "title": "6 · Profiles setup"
+    },
+    {
+      "file": "DirectionDeck.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2",
+      "title": "Direction B · Deck"
+    },
+    {
+      "file": "DirectionBoard.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "page-2",
+      "title": "Direction C · Board"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "n-couch",
+      "page": "page-1",
+      "x": 0,
+      "y": -250,
+      "w": 390,
+      "text": "1 · The couch bar\nTap the faces — they work on this artboard. Shows that everyone seated is part-way through come first, then ones only some of you are on.\nEvery card carries the two-part badge: the service on the left, the profile name to pick once you are there on the right."
+    },
+    {
+      "id": "n-add",
+      "page": "page-1",
+      "x": 470,
+      "y": -250,
+      "w": 390,
+      "text": "2 · Finding it\nSearch is the whole add flow. Each result shows the same service-and-profile badge, so you can see where it will be filed before you tap.\nThe profile shown is the default you marked for that service. Tap through and you can change it."
+    },
+    {
+      "id": "n-sheet",
+      "page": "page-1",
+      "x": 940,
+      "y": -250,
+      "w": 390,
+      "text": "3 · Adding it\nWho is watching comes from the couch bar. Service comes from the search result. Profile is the default marked for that service on screen 6. Starting episode defaults to the beginning.\nThe dashed + next to the profile chips adds a new profile without leaving the sheet."
+    },
+    {
+      "id": "n-detail",
+      "page": "page-1",
+      "x": 1410,
+      "y": -250,
+      "w": 390,
+      "text": "4 · The show\nOne position, yours. Bump it an episode at a time, or mark a whole season done in one tap when you have been watching without opening the app.\nWatched-with is a tag list, not four separate progress counters — the app never claims to know where anyone else is.\nThe dashed row is the reserved spot for 'leaving the service', which we are not building yet."
+    },
+    {
+      "id": "n-states",
+      "page": "page-1",
+      "x": 1880,
+      "y": -250,
+      "w": 390,
+      "text": "5 · Two ways to demote\nNot in the mood: half height, dimmed, no artwork, and it comes back on its own after a set time.\nDecided not to finish: the smallest row on the screen, still searchable, stays down until you undo it.\nBoth drop the profile badge on purpose — that is part of taking less space."
+    },
+    {
+      "id": "n-profiles",
+      "page": "page-1",
+      "x": 2350,
+      "y": -250,
+      "w": 390,
+      "text": "6 · Profiles setup\nOne screen for the profile names as each service actually spells them. Netflix has four, Apple TV+ has two, Prime has one.\nProfiles are not linked to people. One per service is marked as the default, and that is the only thing the marking does — it is what the add screen starts on.\nThe first profile you add to a service becomes its default, so this screen never has to be filled in up front."
+    },
+    {
+      "id": "n-dirs",
+      "page": "page-2",
+      "x": 0,
+      "y": -180,
+      "w": 860,
+      "text": "Two other directions, deliberately left as rough sketches. Direction A is the one built out on the Screens page. Tell me which parts of B or C you want and I will fold them in."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}

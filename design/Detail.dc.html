@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: oklch(0.80 0.14 72); text-decoration: none; }
+    a:hover { color: oklch(0.88 0.12 78); }
+    button { font: inherit; color: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; overflow: hidden; position: relative; background: oklch(0.17 0.012 65); color: oklch(0.95 0.011 85); font-family: 'Space Grotesk', system-ui, sans-serif;">
+
+  <!-- hero: real poster art goes here, pulled in with the title -->
+  <div style="height: 268px; position: relative; overflow: hidden; background: oklch(0.31 0.05 245);">
+    <div style="position: absolute; width: 230px; height: 230px; border-radius: 50%; right: -40px; top: -30px; background: oklch(0.75 0.11 95);"></div>
+    <div style="position: absolute; width: 120px; height: 120px; border-radius: 50%; left: 30px; top: 120px; background: oklch(0.42 0.08 250);"></div>
+    <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(23,20,15,0.55) 0%, rgba(23,20,15,0) 30%, rgba(23,20,15,0.92) 88%, oklch(0.17 0.012 65) 100%);"></div>
+
+    <div style="position: absolute; top: 44px; left: 6px; right: 6px; height: 44px; display: flex; align-items: center; justify-content: space-between;">
+      <button style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.96 0.011 85)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+      </button>
+      <button style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="oklch(0.96 0.011 85)"><circle cx="12" cy="5" r="1.9"></circle><circle cx="12" cy="12" r="1.9"></circle><circle cx="12" cy="19" r="1.9"></circle></svg>
+      </button>
+    </div>
+
+    <div style="position: absolute; left: 18px; right: 18px; bottom: 14px; display: flex; flex-direction: column; gap: 7px;">
+      <h1 style="margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-size: 38px; font-weight: 400; line-height: 1;">Severance</h1>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: oklch(0.74 0.011 80);">
+        <span>2022</span>
+        <span style="color: oklch(0.45 0.010 75);">&bull;</span>
+        <span style="display: inline-flex; align-items: center; height: 21px; border-radius: 5px; overflow: hidden; border: 1px solid oklch(0.84 0.008 85);"><span style="padding: 0 5px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; line-height: 21px; background: oklch(0.84 0.008 85); color: oklch(0.17 0.012 65);">APPLE TV+</span><span style="padding: 0 6px 0 5px; font-size: 10.5px; line-height: 21px; color: oklch(0.84 0.008 85);">Family</span></span>
+        <button style="font-size: 11px; color: oklch(0.80 0.14 72);">change</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 18px; padding: 16px 18px 0;">
+
+    <!-- the one thing this screen exists for -->
+    <div style="border: 1px solid oklch(0.30 0.011 65); background: oklch(0.215 0.013 65); border-radius: 16px; padding: 13px 14px; display: flex; flex-direction: column; gap: 11px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button style="width: 46px; height: 46px; border-radius: 12px; border: 1px solid oklch(0.32 0.011 65); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.78 0.011 85)" stroke-width="2.4" stroke-linecap="round"><path d="M5 12 L19 12"></path></svg>
+        </button>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;">
+          <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 30px; line-height: 1; color: oklch(0.80 0.14 72);">S2 · E4</div>
+          <div style="font-size: 11px; color: oklch(0.58 0.010 75);">last watched 6 days ago</div>
+        </div>
+        <button style="width: 46px; height: 46px; border-radius: 12px; background: oklch(0.80 0.14 72); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="oklch(0.17 0.012 65)" stroke-width="2.6" stroke-linecap="round"><path d="M12 5 L12 19"></path><path d="M5 12 L19 12"></path></svg>
+        </button>
+      </div>
+      <div style="height: 1px; background: oklch(0.27 0.011 65);"></div>
+      <div style="display: flex; align-items: center; gap: 9px;">
+        <span style="font-size: 12px; color: oklch(0.70 0.012 75);">Next up · S2 E5</span>
+        <span style="font-size: 11px; color: oklch(0.50 0.010 75);">4 left</span>
+        <span style="flex-grow: 1;"></span>
+        <button style="height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid oklch(0.45 0.09 72); color: oklch(0.80 0.14 72); font-size: 11.5px; display: flex; align-items: center; gap: 6px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="oklch(0.80 0.14 72)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6.5"></path></svg>
+          Finished S2
+        </button>
+      </div>
+    </div>
+
+    <!-- who you watch it with; the app tracks your place, not theirs -->
+    <div style="display: flex; flex-direction: column; gap: 9px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.13em; color: oklch(0.56 0.010 75);">WATCHED WITH</span>
+        <span style="flex-grow: 1; height: 1px; background: oklch(0.25 0.011 65);"></span>
+        <button style="font-size: 11px; color: oklch(0.80 0.14 72);">edit</button>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <div style="flex-grow: 1; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: oklch(0.215 0.013 65); border: 1px solid oklch(0.30 0.011 65);">
+          <span style="width: 21px; height: 21px; border-radius: 50%; background: oklch(0.80 0.13 40); color: oklch(0.17 0.012 65); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">A</span>
+          <span style="font-size: 11.5px;">Ana</span>
+        </div>
+        <div style="flex-grow: 1; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: oklch(0.215 0.013 65); border: 1px solid oklch(0.30 0.011 65);">
+          <span style="width: 21px; height: 21px; border-radius: 50%; background: oklch(0.80 0.13 345); color: oklch(0.17 0.012 65); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">B</span>
+          <span style="font-size: 11.5px;">Ben</span>
+        </div>
+        <div style="flex-grow: 1; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: oklch(0.215 0.013 65); border: 1px solid oklch(0.30 0.011 65);">
+          <span style="width: 21px; height: 21px; border-radius: 50%; background: oklch(0.80 0.13 205); color: oklch(0.17 0.012 65); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">C</span>
+          <span style="font-size: 11.5px;">Cal</span>
+        </div>
+        <div style="flex-grow: 1; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: oklch(0.215 0.013 65); border: 1px solid oklch(0.30 0.011 65);">
+          <span style="width: 21px; height: 21px; border-radius: 50%; background: oklch(0.80 0.13 145); color: oklch(0.17 0.012 65); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">D</span>
+          <span style="font-size: 11.5px;">Dee</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- reserved slot for the leaving-soon feature, not built -->
+    <div style="display: flex; align-items: center; gap: 10px; padding: 12px 13px; border-radius: 12px; border: 1px dashed oklch(0.30 0.011 65); opacity: 0.5;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="oklch(0.60 0.010 75)" stroke-width="1.8" stroke-linecap="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5 L12 12 L15 14"></path></svg>
+      <span style="font-size: 12px; color: oklch(0.62 0.010 75);">Leaving Apple TV+ in &mdash; days</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 10px; letter-spacing: 0.08em; color: oklch(0.55 0.010 75); border: 1px solid oklch(0.34 0.011 65); border-radius: 4px; padding: 2px 6px;">LATER</span>
+    </div>
+
+    <!-- pulled in at add time -->
+    <div style="display: flex; flex-direction: column; gap: 7px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.13em; color: oklch(0.56 0.010 75);">WHAT IT IS</span>
+        <span style="flex-grow: 1; height: 1px; background: oklch(0.25 0.011 65);"></span>
+      </div>
+      <div style="font-size: 12.5px; line-height: 1.5; color: oklch(0.60 0.010 75); text-wrap: pretty;">[first two sentences of the Wikipedia summary, fetched when the show was added]</div>
+      <a href="#" style="font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px;">
+        Read on Wikipedia
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.80 0.14 72)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16 L16 8"></path><path d="M9 8 L16 8 L16 15"></path></svg>
+      </a>
+    </div>
+
+  </div>
+
+  <!-- the two demotions plus the exit, all one tap -->
+  <div style="position: absolute; left: 18px; right: 18px; bottom: 26px; display: flex; gap: 8px;">
+    <button style="flex-grow: 1; height: 62px; border-radius: 13px; border: 1px solid oklch(0.44 0.07 72); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="oklch(0.80 0.14 72)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5 A8.5 8.5 0 1 1 9.5 4 A6.6 6.6 0 0 0 20 14.5 Z"></path></svg>
+      <span style="font-size: 11px; color: oklch(0.80 0.14 72);">Not in the mood</span>
+    </button>
+    <button style="flex-grow: 1; height: 62px; border-radius: 13px; border: 1px solid oklch(0.40 0.08 25); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="oklch(0.72 0.15 25)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M8.8 8.8 L15.2 15.2"></path></svg>
+      <span style="font-size: 11px; color: oklch(0.72 0.15 25);">Won&rsquo;t finish</span>
+    </button>
+    <button style="flex-grow: 1; height: 62px; border-radius: 13px; border: 1px solid oklch(0.32 0.011 65); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="oklch(0.72 0.012 75)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M8.3 12.3 L11 15 L15.8 9.5"></path></svg>
+      <span style="font-size: 11px; color: oklch(0.72 0.012 75);">Finished</span>
+    </button>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

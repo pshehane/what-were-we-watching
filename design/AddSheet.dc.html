@@ -1,0 +1,161 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: oklch(0.80 0.14 72); text-decoration: none; }
+    a:hover { color: oklch(0.88 0.12 78); }
+    button { font: inherit; color: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; overflow: hidden; position: relative; background: oklch(0.17 0.012 65); color: oklch(0.95 0.011 85); font-family: 'Space Grotesk', system-ui, sans-serif;">
+
+  <!-- the search screen, still there underneath -->
+  <div style="opacity: 0.45;">
+    <div style="height: 44px;"></div>
+    <div style="display: flex; align-items: center; gap: 4px; padding: 0 8px 0 18px; height: 52px;">
+      <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 22px;">Add a show</div>
+    </div>
+    <div style="padding: 6px 18px 0;">
+      <div style="display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 14px; border-radius: 15px; background: oklch(0.225 0.013 65); border: 1px solid oklch(0.30 0.011 65);">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.60 0.012 75)" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5 L21 21"></path></svg>
+        <span style="font-size: 17px; color: oklch(0.70 0.012 75);">the p</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px; padding: 26px 18px 0;">
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <div style="width: 42px; height: 60px; border-radius: 6px; background: oklch(0.32 0.05 30);"></div>
+        <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 19px;">The Pitt</div>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <div style="width: 42px; height: 60px; border-radius: 6px; background: oklch(0.28 0.04 270);"></div>
+        <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 19px;">The Penguin</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- scrim -->
+  <div style="position: absolute; inset: 0; background: rgba(10, 8, 5, 0.66);"></div>
+
+  <!-- the sheet -->
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 582px; background: oklch(0.215 0.013 65); border-top: 1px solid oklch(0.34 0.012 65); border-radius: 24px 24px 0 0; display: flex; flex-direction: column; padding: 0 20px 22px;">
+
+    <div style="display: flex; justify-content: center; padding: 9px 0 14px;">
+      <div style="width: 40px; height: 4px; border-radius: 2px; background: oklch(0.36 0.011 65);"></div>
+    </div>
+
+    <!-- what we matched -->
+    <div style="display: flex; gap: 13px; align-items: center;">
+      <div style="width: 58px; height: 84px; border-radius: 9px; flex-shrink: 0; position: relative; overflow: hidden; background: oklch(0.28 0.04 270);">
+        <div style="position: absolute; width: 48px; height: 48px; border-radius: 50%; left: 13px; top: 13px; background: oklch(0.72 0.10 265);"></div>
+      </div>
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px;">
+        <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 26px; line-height: 1.05;">The Penguin</div>
+        <div style="font-size: 12px; color: oklch(0.66 0.011 75);">2024 · Crime drama · 8 episodes</div>
+        <a href="#" style="font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px;">
+          Wikipedia
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="oklch(0.80 0.14 72)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 16 L16 8"></path><path d="M9 8 L16 8 L16 15"></path></svg>
+        </a>
+      </div>
+    </div>
+
+    <div style="height: 1px; background: oklch(0.29 0.011 65); margin: 16px 0 14px;"></div>
+
+    <div style="font-size: 11px; color: oklch(0.58 0.010 75); padding-bottom: 14px;">Everything below is already filled in. Change what is wrong, or just add it.</div>
+
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+
+      <!-- who -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.13em; color: oklch(0.56 0.010 75);">WATCHING</span>
+          <span style="flex-grow: 1;"></span>
+          <button style="font-size: 11px; color: oklch(0.80 0.14 72);">Just me</button>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <div style="flex-grow: 1; height: 46px; border-radius: 11px; display: flex; align-items: center; justify-content: center; gap: 6px; background: oklch(0.80 0.13 40); color: oklch(0.17 0.012 65); font-size: 12px; font-weight: 700;">
+            <span style="width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center;">A</span>Ana</div>
+          <div style="flex-grow: 1; height: 46px; border-radius: 11px; display: flex; align-items: center; justify-content: center; gap: 6px; background: oklch(0.80 0.13 345); color: oklch(0.17 0.012 65); font-size: 12px; font-weight: 700;">
+            <span style="width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center;">B</span>Ben</div>
+          <div style="flex-grow: 1; height: 46px; border-radius: 11px; display: flex; align-items: center; justify-content: center; gap: 6px; background: oklch(0.80 0.13 205); color: oklch(0.17 0.012 65); font-size: 12px; font-weight: 700;">
+            <span style="width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: center;">C</span>Cal</div>
+          <div style="flex-grow: 1; height: 46px; border-radius: 11px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px dashed oklch(0.35 0.011 65); color: oklch(0.50 0.010 75); font-size: 12px;">
+            <span style="width: 20px; height: 20px; border-radius: 50%; border: 1px solid oklch(0.35 0.011 65); display: flex; align-items: center; justify-content: center;">D</span>Dee</div>
+        </div>
+      </div>
+
+      <!-- where -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.13em; color: oklch(0.56 0.010 75);">SERVICE</span>
+          <span style="font-size: 10.5px; color: oklch(0.46 0.010 75);">guessed from where it streams</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <div style="height: 44px; padding: 0 14px; border-radius: 11px; display: flex; align-items: center; font-size: 12px; font-weight: 700; color: oklch(0.17 0.012 65); background: oklch(0.80 0.14 72);">MAX</div>
+          <div style="height: 44px; padding: 0 13px; border-radius: 11px; display: flex; align-items: center; font-size: 12px; color: oklch(0.62 0.010 75); border: 1px solid oklch(0.30 0.011 65);">Netflix</div>
+          <div style="height: 44px; padding: 0 13px; border-radius: 11px; display: flex; align-items: center; font-size: 12px; color: oklch(0.62 0.010 75); border: 1px solid oklch(0.30 0.011 65);">Hulu</div>
+          <div style="height: 44px; padding: 0 13px; border-radius: 11px; display: flex; align-items: center; font-size: 12px; color: oklch(0.62 0.010 75); border: 1px solid oklch(0.30 0.011 65);">Disney+</div>
+          <div style="height: 44px; width: 34px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 15px; color: oklch(0.55 0.010 75); border: 1px solid oklch(0.30 0.011 65);">›</div>
+        </div>
+      </div>
+
+      <!-- profile -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.13em; color: oklch(0.56 0.010 75);">PROFILE ON MAX</span>
+          <span style="font-size: 10.5px; color: oklch(0.46 0.010 75);">your default for Max</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <div style="height: 44px; padding: 0 14px; border-radius: 11px; display: flex; align-items: center; font-size: 12px; font-weight: 700; color: oklch(0.17 0.012 65); background: oklch(0.80 0.14 72);">Family</div>
+          <div style="height: 44px; padding: 0 13px; border-radius: 11px; display: flex; align-items: center; font-size: 12px; color: oklch(0.62 0.010 75); border: 1px solid oklch(0.30 0.011 65);">Dad</div>
+          <div style="height: 44px; padding: 0 13px; border-radius: 11px; display: flex; align-items: center; font-size: 12px; color: oklch(0.62 0.010 75); border: 1px solid oklch(0.30 0.011 65);">Kids</div>
+          <div style="height: 44px; width: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; border: 1px dashed oklch(0.34 0.011 65);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="oklch(0.70 0.011 85)" stroke-width="2.2" stroke-linecap="round"><path d="M12 5 L12 19"></path><path d="M5 12 L19 12"></path></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- position -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.13em; color: oklch(0.56 0.010 75);">STARTING AT</span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button style="width: 46px; height: 46px; border-radius: 11px; border: 1px solid oklch(0.32 0.011 65); display: flex; align-items: center; justify-content: center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.78 0.011 85)" stroke-width="2.4" stroke-linecap="round"><path d="M5 12 L19 12"></path></svg>
+          </button>
+          <div style="flex-grow: 1; height: 46px; border-radius: 11px; background: oklch(0.26 0.013 65); display: flex; align-items: center; justify-content: center; gap: 9px;">
+            <span style="font-family: 'Instrument Serif', Georgia, serif; font-size: 20px;">S1 · E1</span>
+            <span style="font-size: 10.5px; color: oklch(0.58 0.010 75);">from the start</span>
+          </div>
+          <button style="width: 46px; height: 46px; border-radius: 11px; border: 1px solid oklch(0.32 0.011 65); display: flex; align-items: center; justify-content: center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.78 0.011 85)" stroke-width="2.4" stroke-linecap="round"><path d="M12 5 L12 19"></path><path d="M5 12 L19 12"></path></svg>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <span style="flex-grow: 1;"></span>
+
+    <button style="height: 56px; border-radius: 15px; background: oklch(0.80 0.14 72); color: oklch(0.15 0.012 65); font-size: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 9px;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.15 0.012 65)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 L9.5 18 L20 6.5"></path></svg>
+      Put it on the couch
+    </button>
+
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

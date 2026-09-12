@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: oklch(0.55 0.14 55); }
+    a:hover { color: oklch(0.45 0.14 55); }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; overflow: hidden; position: relative; background: oklch(0.95 0.008 85); color: oklch(0.25 0.010 70); font-family: 'Space Grotesk', system-ui, sans-serif;">
+
+  <div style="height: 44px;"></div>
+
+  <div style="padding: 8px 22px 0; display: flex; flex-direction: column; gap: 14px;">
+    <div style="font-family: 'Caveat', cursive; font-size: 26px; color: oklch(0.40 0.010 70);">Direction B &mdash; the Deck</div>
+
+    <div style="display: flex; gap: 10px;">
+      <div style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid oklch(0.25 0.010 70); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; background: oklch(0.78 0.13 65);">A</div>
+      <div style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid oklch(0.25 0.010 70); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; background: oklch(0.78 0.13 65);">B</div>
+      <div style="width: 40px; height: 40px; border-radius: 50%; border: 2px dashed oklch(0.65 0.010 70); display: flex; align-items: center; justify-content: center; font-size: 13px; color: oklch(0.62 0.010 70);">C</div>
+      <div style="width: 40px; height: 40px; border-radius: 50%; border: 2px dashed oklch(0.65 0.010 70); display: flex; align-items: center; justify-content: center; font-size: 13px; color: oklch(0.62 0.010 70);">D</div>
+      <span style="flex-grow: 1;"></span>
+      <div style="font-family: 'Caveat', cursive; font-size: 19px; color: oklch(0.50 0.010 70); align-self: center;">7 to flick through</div>
+    </div>
+  </div>
+
+  <!-- the stack -->
+  <div style="position: relative; height: 470px; margin-top: 18px;">
+    <div style="position: absolute; left: 52px; top: 16px; width: 286px; height: 420px; border-radius: 18px; border: 2px solid oklch(0.72 0.010 70); background: oklch(0.92 0.008 85); transform: rotate(3deg);"></div>
+    <div style="position: absolute; left: 46px; top: 8px; width: 286px; height: 420px; border-radius: 18px; border: 2px solid oklch(0.62 0.010 70); background: oklch(0.93 0.008 85); transform: rotate(-2deg);"></div>
+
+    <div style="position: absolute; left: 42px; top: 0; width: 300px; height: 434px; border-radius: 18px; border: 2.5px solid oklch(0.25 0.010 70); background: oklch(0.97 0.006 85); display: flex; flex-direction: column; overflow: hidden;">
+      <div style="height: 270px; background: oklch(0.88 0.008 85); border-bottom: 2px solid oklch(0.25 0.010 70); position: relative;">
+        <svg width="296" height="266" viewBox="0 0 296 266" style="position: absolute; inset: 0;" fill="none" stroke="oklch(0.74 0.010 70)" stroke-width="2">
+          <path d="M0 0 L296 266"></path><path d="M296 0 L0 266"></path>
+        </svg>
+        <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: 'Caveat', cursive; font-size: 22px; color: oklch(0.48 0.010 70); background: oklch(0.88 0.008 85); padding: 3px 10px;">poster</div>
+      </div>
+      <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="height: 22px; width: 62%; background: oklch(0.30 0.010 70); border-radius: 3px;"></div>
+        <div style="height: 11px; width: 84%; background: oklch(0.78 0.010 70); border-radius: 3px;"></div>
+        <div style="display: flex; gap: 7px; align-items: center; padding-top: 4px;">
+          <div style="height: 26px; padding: 0 10px; border-radius: 13px; border: 2px solid oklch(0.55 0.14 55); color: oklch(0.45 0.14 55); font-size: 12px; font-weight: 700; display: flex; align-items: center;">S2 · E4</div>
+          <div style="height: 26px; padding: 0 10px; border-radius: 13px; border: 2px solid oklch(0.72 0.010 70); font-size: 12px; display: flex; align-items: center; color: oklch(0.45 0.010 70);">Apple TV+</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 22px; right: 22px; bottom: 112px; display: flex; gap: 12px;">
+    <div style="flex-grow: 1; height: 60px; border-radius: 30px; border: 2.5px solid oklch(0.25 0.010 70); background: oklch(0.80 0.14 72); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700;">Watch this</div>
+    <div style="width: 110px; height: 60px; border-radius: 30px; border: 2.5px dashed oklch(0.62 0.010 70); display: flex; align-items: center; justify-content: center; font-size: 14px; color: oklch(0.48 0.010 70);">Next &rsaquo;</div>
+  </div>
+
+  <div style="position: absolute; left: 22px; right: 22px; bottom: 46px; font-family: 'Caveat', cursive; font-size: 21px; line-height: 1.25; color: oklch(0.48 0.010 70);">
+    One show at a time, flicked like cards. Fastest yes/no &mdash; but you cannot see the whole list at a glance.
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

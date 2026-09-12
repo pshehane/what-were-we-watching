@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: oklch(0.80 0.14 72); text-decoration: none; }
+    a:hover { color: oklch(0.88 0.12 78); }
+    button { font: inherit; color: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; overflow: hidden; position: relative; background: oklch(0.17 0.012 65); color: oklch(0.95 0.011 85); font-family: 'Space Grotesk', system-ui, sans-serif;">
+
+  <div style="height: 44px;"></div>
+
+  <div style="display: flex; align-items: center; gap: 4px; padding: 0 8px 0 6px; height: 52px;">
+    <button style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="oklch(0.85 0.011 85)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 L8 12 L15 19"></path></svg>
+    </button>
+    <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 22px;">Add a show</div>
+  </div>
+
+  <!-- search field -->
+  <div style="padding: 6px 18px 0;">
+    <div style="display: flex; align-items: center; gap: 10px; height: 54px; padding: 0 14px; border-radius: 15px; background: oklch(0.225 0.013 65); border: 1.5px solid oklch(0.80 0.14 72);">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="oklch(0.80 0.14 72)" stroke-width="1.9" stroke-linecap="round" style="flex-shrink: 0;"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5 L21 21"></path></svg>
+      <div style="flex-grow: 1; display: flex; align-items: center; font-size: 17px;">
+        <span>the p</span>
+        <span style="width: 2px; height: 21px; background: oklch(0.80 0.14 72); margin-left: 2px;"></span>
+      </div>
+      <button style="width: 26px; height: 26px; border-radius: 50%; background: oklch(0.30 0.011 65); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="oklch(0.72 0.012 75)" stroke-width="2.6" stroke-linecap="round"><path d="M6 6 L18 18"></path><path d="M18 6 L6 18"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- the couch selection carries straight into the add -->
+  <div style="display: flex; align-items: center; gap: 8px; padding: 13px 18px 10px;">
+    <span style="font-size: 11.5px; color: oklch(0.58 0.010 75); letter-spacing: 0.01em;">Adding for</span>
+    <div style="display: flex;">
+      <div style="width: 24px; height: 24px; border-radius: 50%; margin-right: -6px; border: 2px solid oklch(0.17 0.012 65); display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; color: oklch(0.17 0.012 65); background: oklch(0.80 0.13 40);">A</div>
+      <div style="width: 24px; height: 24px; border-radius: 50%; margin-right: -6px; border: 2px solid oklch(0.17 0.012 65); display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; color: oklch(0.17 0.012 65); background: oklch(0.80 0.13 345);">B</div>
+      <div style="width: 24px; height: 24px; border-radius: 50%; margin-right: -6px; border: 2px solid oklch(0.17 0.012 65); display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; color: oklch(0.17 0.012 65); background: oklch(0.80 0.13 205);">C</div>
+      <div style="width: 24px; height: 24px; border-radius: 50%; margin-right: -6px; border: 2px solid oklch(0.17 0.012 65); display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; color: oklch(0.17 0.012 65); background: oklch(0.80 0.13 145);">D</div>
+    </div>
+    <span style="flex-grow: 1;"></span>
+    <button style="font-size: 11.5px; color: oklch(0.80 0.14 72); height: 44px; display: flex; align-items: center;">Change</button>
+  </div>
+
+  <!-- results: each one already carries the service and the profile it would use -->
+  <div style="display: flex; flex-direction: column; padding: 0 18px;">
+
+    <div style="display: flex; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid oklch(0.225 0.011 65);">
+      <div style="width: 42px; height: 62px; border-radius: 6px; flex-shrink: 0; position: relative; overflow: hidden; background: oklch(0.32 0.05 30);">
+        <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; left: 10px; top: 9px; background: oklch(0.76 0.13 45);"></div>
+      </div>
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+        <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 19px; line-height: 1.05;">The Pitt</div>
+        <div style="font-size: 11.5px; color: oklch(0.60 0.010 75);">2025 · Medical drama · 15 episodes</div>
+        <span style="display: inline-flex; align-self: flex-start; align-items: center; height: 19px; border-radius: 5px; overflow: hidden; border: 1px solid oklch(0.70 0.15 290);">
+          <span style="padding: 0 5px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; line-height: 19px; background: oklch(0.70 0.15 290); color: oklch(0.17 0.012 65);">MAX</span>
+          <span style="padding: 0 6px 0 5px; font-size: 10.5px; line-height: 19px; color: oklch(0.70 0.15 290);">Family</span>
+        </span>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.010 75)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M9 5 L16 12 L9 19"></path></svg>
+    </div>
+
+    <!-- the one we are about to tap -->
+    <div style="display: flex; gap: 12px; align-items: center; padding: 9px 10px; margin: 0 -10px; border-radius: 12px; background: oklch(0.24 0.018 70); border-bottom: 1px solid oklch(0.225 0.011 65);">
+      <div style="width: 42px; height: 62px; border-radius: 6px; flex-shrink: 0; position: relative; overflow: hidden; background: oklch(0.28 0.04 270);">
+        <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; left: 10px; top: 9px; background: oklch(0.72 0.10 265);"></div>
+      </div>
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+        <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 19px; line-height: 1.05;">The Penguin</div>
+        <div style="font-size: 11.5px; color: oklch(0.60 0.010 75);">2024 · Crime drama · 8 episodes</div>
+        <span style="display: inline-flex; align-self: flex-start; align-items: center; height: 19px; border-radius: 5px; overflow: hidden; border: 1px solid oklch(0.70 0.15 290);">
+          <span style="padding: 0 5px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; line-height: 19px; background: oklch(0.70 0.15 290); color: oklch(0.17 0.012 65);">MAX</span>
+          <span style="padding: 0 6px 0 5px; font-size: 10.5px; line-height: 19px; color: oklch(0.70 0.15 290);">Family</span>
+        </span>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.80 0.14 72)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M9 5 L16 12 L9 19"></path></svg>
+    </div>
+
+    <!-- already tracked, so it offers the right action instead of a duplicate -->
+    <div style="display: flex; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid oklch(0.225 0.011 65);">
+      <div style="width: 42px; height: 62px; border-radius: 6px; flex-shrink: 0; position: relative; overflow: hidden; background: oklch(0.26 0.03 200); opacity: 0.55;">
+        <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; left: 10px; top: 9px; background: oklch(0.66 0.09 210);"></div>
+      </div>
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+        <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 19px; line-height: 1.05; color: oklch(0.66 0.011 85);">The Peripheral</div>
+        <div style="font-size: 11.5px; color: oklch(0.55 0.010 75);">2022 · Sci-fi · 8 episodes</div>
+        <span style="display: inline-flex; align-self: flex-start; align-items: center; height: 19px; border-radius: 5px; overflow: hidden; border: 1px solid oklch(0.55 0.06 225);">
+          <span style="padding: 0 5px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; line-height: 19px; background: oklch(0.55 0.06 225); color: oklch(0.17 0.012 65);">PRIME</span>
+          <span style="padding: 0 6px 0 5px; font-size: 10.5px; line-height: 19px; color: oklch(0.62 0.05 225);">Household</span>
+        </span>
+        <div style="font-size: 11px; color: oklch(0.72 0.15 25);">On your shelf — Ana &amp; Ben stopped at S1 E5</div>
+      </div>
+      <button style="height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid oklch(0.36 0.011 65); font-size: 11.5px; color: oklch(0.80 0.011 85); flex-shrink: 0;">Restart</button>
+    </div>
+
+    <div style="display: flex; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid oklch(0.225 0.011 65);">
+      <div style="width: 42px; height: 62px; border-radius: 6px; flex-shrink: 0; position: relative; overflow: hidden; background: oklch(0.30 0.03 95);">
+        <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; left: 10px; top: 9px; background: oklch(0.70 0.08 105);"></div>
+      </div>
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+        <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 19px; line-height: 1.05;">The Pacific</div>
+        <div style="font-size: 11.5px; color: oklch(0.60 0.010 75);">2010 · War drama · 10 episodes</div>
+        <span style="display: inline-flex; align-self: flex-start; align-items: center; height: 19px; border-radius: 5px; overflow: hidden; border: 1px solid oklch(0.70 0.15 290);">
+          <span style="padding: 0 5px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; line-height: 19px; background: oklch(0.70 0.15 290); color: oklch(0.17 0.012 65);">MAX</span>
+          <span style="padding: 0 6px 0 5px; font-size: 10.5px; line-height: 19px; color: oklch(0.70 0.15 290);">Family</span>
+        </span>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.010 75)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M9 5 L16 12 L9 19"></path></svg>
+    </div>
+
+    <!-- profile shown is the default marked for that service -->
+    <div style="display: flex; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid oklch(0.225 0.011 65);">
+      <div style="width: 42px; height: 62px; border-radius: 6px; flex-shrink: 0; position: relative; overflow: hidden; background: oklch(0.29 0.04 330);">
+        <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; left: 10px; top: 9px; background: oklch(0.70 0.09 340);"></div>
+      </div>
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+        <div style="font-family: 'Instrument Serif', Georgia, serif; font-size: 19px; line-height: 1.05;">The Path</div>
+        <div style="font-size: 11.5px; color: oklch(0.60 0.010 75);">2016 · Drama · 36 episodes</div>
+        <span style="display: inline-flex; align-self: flex-start; align-items: center; height: 19px; border-radius: 5px; overflow: hidden; border: 1px solid oklch(0.80 0.18 150);">
+          <span style="padding: 0 5px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; line-height: 19px; background: oklch(0.80 0.18 150); color: oklch(0.17 0.012 65);">HULU</span>
+          <span style="padding: 0 6px 0 5px; font-size: 10.5px; line-height: 19px; color: oklch(0.80 0.18 150);">Dad</span>
+        </span>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0.010 75)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M9 5 L16 12 L9 19"></path></svg>
+    </div>
+
+    <button style="margin-top: 16px; height: 50px; border-radius: 13px; border: 1px dashed oklch(0.34 0.011 65); display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13.5px; color: oklch(0.66 0.011 85);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="oklch(0.66 0.011 85)" stroke-width="2" stroke-linecap="round"><path d="M12 5 L12 19"></path><path d="M5 12 L19 12"></path></svg>
+      Add &ldquo;the p&rdquo; as its own title
+    </button>
+
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

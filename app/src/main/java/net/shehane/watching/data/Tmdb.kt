@@ -75,6 +75,42 @@ object Tmdb {
         return json.decodeFromString(SearchResponse.serializer(), body).results
     }
 
+    // ------------------------------------------------------------------ season
+
+    @Serializable
+    data class Episode(
+        @SerialName("season_number") val season: Int = 0,
+        @SerialName("episode_number") val episode: Int = 0,
+        val name: String = "",
+        val overview: String? = null,
+        @SerialName("air_date") val airDate: String? = null,
+    ) {
+        /** TMDB sends an empty string rather than omitting the field. */
+        val summary: String? get() = overview?.takeIf { it.isNotBlank() }
+    }
+
+    @Serializable
+    data class Season(
+        @SerialName("season_number") val number: Int = 0,
+        val name: String = "",
+        val overview: String? = null,
+        val episodes: List<Episode> = emptyList(),
+    ) {
+        val summary: String? get() = overview?.takeIf { it.isNotBlank() }
+    }
+
+    /**
+     * One season, with every episode's title and synopsis in the same response.
+     *
+     * This answers both "what is the next one" and "what happened before it", so
+     * neither needs a call of its own.
+     */
+    suspend fun season(tmdbId: Int, number: Int): Season {
+        val url = withKey("$BASE/tv/$tmdbId/season/$number?language=en-US")
+        val body = Http.getString(url, authHeaders())
+        return json.decodeFromString(Season.serializer(), body)
+    }
+
     // ------------------------------------------------------------------ detail
 
     @Serializable

@@ -4,19 +4,23 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -35,6 +39,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.shehane.watching.data.Clock
+import net.shehane.watching.data.Recap
+import net.shehane.watching.data.Tmdb
 import net.shehane.watching.data.Share
 import net.shehane.watching.data.LibraryStore
 import net.shehane.watching.model.Library
@@ -64,6 +70,9 @@ fun ShowScreen(
     onFinish: () -> Unit,
     onReactivate: () -> Unit,
     onVerdict: (Boolean?) -> Unit,
+    seasons: Map<Int, Tmdb.Season>,
+    seasonsLoading: Boolean,
+    onNeedSeasons: (List<Int>) -> Unit,
     onDelete: () -> Unit,
     insets: PaddingValues,
 ) {
@@ -76,11 +85,13 @@ fun ShowScreen(
     var confirmDelete by remember { mutableStateOf(false) }
     var sharing by remember(show.id) { mutableStateOf(false) }
     var pickingSeason by remember(show.id) { mutableStateOf(false) }
+    var asking by remember(show.id) { mutableStateOf<Asking?>(null) }
 
     // Back shuts whichever block is open before it leaves the screen. Both live
     // here rather than in the view model, so the handler does too.
     BackHandler(enabled = sharing) { sharing = false }
     BackHandler(enabled = pickingSeason) { pickingSeason = false }
+    BackHandler(enabled = asking != null) { asking = null }
     BackHandler(enabled = confirmDelete) { confirmDelete = false }
 
     Box(Modifier.fillMaxSize().background(Ink.Ground)) {
@@ -321,10 +332,40 @@ fun ShowScreen(
                     Divider(Ink.Line)
                     VGap(11.dp)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        BasicText(
-                            "Next up · S${show.position.season} E${show.position.episode + 1}",
-                            style = Type.BodyTight,
-                        )
+                        // Tappable, because "have we seen this one?" is a question
+                        // this screen was making you answer from memory.
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .border(1.dp, Ink.Line, RoundedCornerShape(10.dp))
+                                .clickable {
+                                    asking = Asking.NEXT
+                                    onNeedSeasons(listOf(show.position.season, show.position.season + 1))
+                                }
+                                .padding(horizontal = 11.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            BasicText(
+                                "Next up · S${show.position.season} E${show.position.episode + 1}",
+                                style = Type.BodyTight.copy(color = Ink.Text),
+                            )
+                            HGap(7.dp)
+                            Draw.Chevron(13.dp, Ink.Ghost)
+                        }
+
+                        HGap(8.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .border(1.dp, Ink.Line, CircleShape)
+                                .clickable {
+                                    asking = Asking.CATCH_UP
+                                    onNeedSeasons(Recap.seasonsNeeded(show))
+                                },
+                            contentAlignment = Alignment.Center,
+                        ) { Draw.Question(17.dp, Ink.Muted) }
+
                         Spacer(Modifier.weight(1f))
                         // On the last season there is nothing to roll into, so the
                         // button offers the thing you actually mean instead of
@@ -599,6 +640,184 @@ fun ShowScreen(
                 VGap(28.dp + insets.calculateBottomPadding())
             }
         }
+
+        asking?.let { which ->
+            val nextLabel = Recap.resolveNext(show.position, seasons, show.seasonCount)
+            val label = nextLabel?.let { "S${it.season} E${it.episode}" }
+                ?: "S${show.position.season} E${show.position.episode + 1}"
+
+            when (which) {
+                Asking.NEXT -> AskSheet(
+                    title = "Next up",
+                    subtitle = "$label of ${show.title}",
+                    onDismiss = { asking = null },
+                    bottomInset = insets,
+                ) {
+                    NextUpBody(Recap.nextUp(show, seasons), seasonsLoading)
+                }
+
+                Asking.CATCH_UP -> AskSheet(
+                    title = "Catch me up",
+                    subtitle = "Everything before $label",
+                    onDismiss = { asking = null },
+                    bottomInset = insets,
+                ) {
+                    CatchUpBody(Recap.catchUp(show, seasons), seasonsLoading, label)
+                }
+            }
+        }
+    }
+}
+
+/** Which question is open over the screen. */
+private enum class Asking { NEXT, CATCH_UP }
+
+/**
+ * A sheet over the show, for the two things you cannot answer from the position
+ * alone: what the next one is, and what happened before it.
+ */
+@Composable
+private fun AskSheet(
+    title: String,
+    subtitle: String,
+    onDismiss: () -> Unit,
+    bottomInset: PaddingValues,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Ink.Ground.copy(alpha = 0.72f))
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+                onClick = onDismiss,
+            ),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.82f)
+                .clip(RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp))
+                .background(Ink.SurfaceSunk)
+                .border(
+                    1.dp,
+                    Ink.Line,
+                    RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp),
+                )
+                // Swallows taps so hitting the sheet does not dismiss it.
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = {},
+                ),
+        ) {
+            Row(
+                Modifier.fillMaxWidth().padding(start = 18.dp, end = 8.dp, top = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    BasicText(title, style = Type.ShowTitle, maxLines = 2, overflow = Clip)
+                    VGap(4.dp)
+                    BasicText(subtitle, style = Type.Meta)
+                }
+                RoundButtonPlain(onDismiss) { Draw.Cross(18.dp, Ink.Muted, circled = true) }
+            }
+            VGap(12.dp)
+            Divider(Ink.Line)
+            Column(
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 18.dp),
+            ) {
+                VGap(14.dp)
+                content()
+                VGap(24.dp + bottomInset.calculateBottomPadding())
+            }
+        }
+    }
+}
+
+@Composable
+private fun NextUpBody(next: Recap.NextUp?, loading: Boolean) {
+    when {
+        next != null -> Column {
+            BasicText(next.title, style = Type.ShowTitleSm)
+            VGap(6.dp)
+            BasicText(
+                listOfNotNull(
+                    "S${next.season} E${next.episode}",
+                    next.airDate?.takeIf { it.isNotBlank() },
+                    if (next.unaired) "not out yet" else null,
+                ).joinToString(" · "),
+                style = Type.Meta.copy(color = if (next.unaired) Ink.Amber else Ink.Faint),
+            )
+            VGap(14.dp)
+            BasicText(
+                next.summary ?: "TMDB has no synopsis for this one.",
+                style = Type.Body.copy(color = if (next.summary != null) Ink.Text else Ink.Faint),
+            )
+        }
+
+        loading -> EmptyNote("Asking TMDB…")
+        else -> EmptyNote("Nothing after this one, or TMDB does not list it.")
+    }
+}
+
+@Composable
+private fun CatchUpBody(recap: Recap.CatchUp, loading: Boolean, position: String) {
+    if (recap.isEmpty) {
+        EmptyNote(if (loading) "Reading back through the seasons…" else "Nothing behind you yet.")
+        return
+    }
+
+    Column {
+        for (entry in recap.recent) {
+            BasicText("S${entry.season} E${entry.episode} · ${entry.title}", style = Type.ShowTitleSm)
+            VGap(5.dp)
+            BasicText(
+                entry.summary ?: "No synopsis for this one.",
+                style = Type.Body.copy(color = if (entry.summary != null) Ink.Muted else Ink.Ghost),
+            )
+            VGap(16.dp)
+        }
+
+        if (recap.earlier.isNotEmpty()) {
+            SectionHeader("FURTHER BACK", Ink.Faint)
+            VGap(12.dp)
+            for ((number, summary) in recap.earlier) {
+                BasicText("Season $number", style = Type.ShowTitleSm)
+                VGap(5.dp)
+                BasicText(summary, style = Type.Body.copy(color = Ink.Muted))
+                VGap(16.dp)
+            }
+        }
+
+        if (recap.olderCount > 0) {
+            val where = when (recap.olderSeasons.size) {
+                0 -> ""
+                1 -> " of season ${recap.olderSeasons.first()}"
+                else -> " of seasons " + recap.olderSeasons.joinToString(", ")
+            }
+            BasicText(
+                "${recap.olderCount} earlier episode" +
+                    (if (recap.olderCount == 1) "" else "s") + where + " not listed.",
+                style = Type.Meta,
+            )
+            VGap(10.dp)
+        }
+
+        if (loading) {
+            BasicText("Still reading back…", style = Type.Meta.copy(color = Ink.Amber))
+            VGap(10.dp)
+        }
+
+        BasicText(
+            "Stops at $position. Nothing from it or after it is here.",
+            style = Type.Meta,
+        )
     }
 }
 

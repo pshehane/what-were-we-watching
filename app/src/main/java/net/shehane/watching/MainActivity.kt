@@ -97,6 +97,8 @@ private fun App() {
     val guessLoading by vm.guessLoading.collectAsStateWithLifecycle()
     val verdicts by vm.verdicts.collectAsStateWithLifecycle()
     val catchUpLoading by vm.catchUpLoading.collectAsStateWithLifecycle()
+    val seasonCache by vm.seasons.collectAsStateWithLifecycle()
+    val seasonsLoading by vm.seasonsLoading.collectAsStateWithLifecycle()
 
     val insets = WindowInsets.safeDrawing.asPaddingValues()
 
@@ -197,6 +199,11 @@ private fun App() {
                         onFinish = { vm.finish(show.id); vm.popScreen() },
                         onReactivate = { vm.reactivate(show.id) },
                         onVerdict = { vm.setVerdict(show.id, it) },
+                        // The cache is passed rather than read through a call, so
+                        // Compose can see the sheet's dependency on it.
+                        seasons = vm.seasonsFor(show, seasonCache),
+                        seasonsLoading = seasonsLoading,
+                        onNeedSeasons = { vm.loadSeasons(show, it) },
                         onDelete = { vm.deleteShow(show.id) },
                         insets = insets,
                     )

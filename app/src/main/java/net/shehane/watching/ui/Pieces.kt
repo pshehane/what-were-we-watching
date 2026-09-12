@@ -533,6 +533,22 @@ object Draw {
         }
     }
 
+    /** A question mark, drawn rather than set, so it matches the other icons. */
+    @Composable
+    fun Question(size: Dp = 18.dp, colour: Color = Ink.Muted) {
+        Canvas(Modifier.size(size)) {
+            val w = this.size.width
+            val s = w * 0.105f
+            val hook = Path().apply {
+                moveTo(w * 0.33f, w * 0.36f)
+                cubicTo(w * 0.33f, w * 0.20f, w * 0.68f, w * 0.19f, w * 0.68f, w * 0.37f)
+                cubicTo(w * 0.68f, w * 0.51f, w * 0.50f, w * 0.52f, w * 0.50f, w * 0.66f)
+            }
+            drawPath(hook, colour, style = Stroke(s, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            drawCircle(colour, s * 0.62f, Offset(w * 0.50f, w * 0.80f))
+        }
+    }
+
     /** Three nodes and two arms: the share glyph every Android user already reads. */
     @Composable
     fun Share(size: Dp = 20.dp, colour: Color = Ink.Text) {

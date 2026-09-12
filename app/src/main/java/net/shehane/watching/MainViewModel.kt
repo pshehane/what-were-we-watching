@@ -261,6 +261,53 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         pushSoon()
     }
 
+    // ------------------------------------------------------- episodes and recaps
+
+    /** "tmdbId/season" to what TMDB holds for it. Kept for the session only. */
+    private val _seasons = MutableStateFlow<Map<String, Tmdb.Season>>(emptyMap())
+    val seasons: StateFlow<Map<String, Tmdb.Season>> = _seasons.asStateFlow()
+
+    private val _seasonsLoading = MutableStateFlow(false)
+    val seasonsLoading: StateFlow<Boolean> = _seasonsLoading.asStateFlow()
+
+    private var seasonJob: Job? = null
+
+    private fun key(tmdbId: Int, season: Int) = "$tmdbId/$season"
+
+    /** The seasons already fetched for this show, keyed by season number. */
+    fun seasonsFor(
+        show: Show,
+        cache: Map<String, Tmdb.Season> = _seasons.value,
+    ): Map<Int, Tmdb.Season> {
+        val tmdbId = show.tmdbId ?: return emptyMap()
+        return cache.entries
+            .filter { it.key.startsWith("$tmdbId/") }
+            .associate { it.value.number to it.value }
+    }
+
+    /**
+     * Fetches the seasons a screen needs, skipping any already held.
+     *
+     * Tapping the next episode needs one season. A catch-up needs every season up
+     * to where you are, which is why it is only fetched when asked for rather than
+     * when the show opens.
+     */
+    fun loadSeasons(show: Show, numbers: List<Int>) {
+        val tmdbId = show.tmdbId ?: return
+        val missing = numbers.filter { _seasons.value[key(tmdbId, it)] == null }
+        if (missing.isEmpty()) return
+
+        seasonJob?.cancel()
+        seasonJob = viewModelScope.launch {
+            _seasonsLoading.value = true
+            for (n in missing) {
+                runCatching { Tmdb.season(tmdbId, n) }
+                    .onSuccess { _seasons.value = _seasons.value + (key(tmdbId, n) to it) }
+            }
+            _seasonsLoading.value = false
+        }
+    }
+
     /** Asked once per show per session, so reopening a screen is free. */
     private val detailsAsked = mutableSetOf<String>()
 

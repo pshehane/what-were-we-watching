@@ -40,6 +40,21 @@ object PosterCache {
 
     fun cached(key: String): ImageBitmap? = memory.get(key)
 
+    /** Where [dir] keeps the artwork this app downloads. One place, so sharing agrees with loading. */
+    fun dirIn(context: android.content.Context): File = File(context.cacheDir, "posters")
+
+    /**
+     * The poster already on disk, or null when it was never fetched.
+     *
+     * Sharing reads the file rather than re-encoding the bitmap in memory: the
+     * bytes came from TMDB as a JPEG and going back out as one loses nothing.
+     */
+    fun fileFor(dir: File, path: String?, large: Boolean = true): File? {
+        if (path.isNullOrBlank()) return null
+        val file = File(dir, fileNameFor(keyFor(path, large)))
+        return if (file.exists() && file.length() > 0) file else null
+    }
+
     suspend fun load(dir: File, path: String, large: Boolean): ImageBitmap? {
         val key = keyFor(path, large)
         memory.get(key)?.let { return it }

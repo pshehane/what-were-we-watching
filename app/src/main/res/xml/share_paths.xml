@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Only the poster cache. Sharing hands another app a read grant on whatever this
+  file exposes, so it names the one directory that holds artwork and nothing else:
+  library.json lives in files/ and must never be reachable this way.
+-->
+<paths>
+    <cache-path name="posters" path="posters/" />
+</paths>

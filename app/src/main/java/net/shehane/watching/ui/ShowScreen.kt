@@ -1,5 +1,6 @@
 package net.shehane.watching.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.shehane.watching.data.Clock
+import net.shehane.watching.data.Share
 import net.shehane.watching.data.LibraryStore
 import net.shehane.watching.model.Library
 import net.shehane.watching.model.Position
@@ -72,6 +74,12 @@ fun ShowScreen(
     var editingPeople by remember { mutableStateOf(false) }
     var editingPlacement by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var sharing by remember(show.id) { mutableStateOf(false) }
+
+    // Back shuts whichever block is open before it leaves the screen. Both live
+    // here rather than in the view model, so the handler does too.
+    BackHandler(enabled = sharing) { sharing = false }
+    BackHandler(enabled = confirmDelete) { confirmDelete = false }
 
     Box(Modifier.fillMaxSize().background(Ink.Ground)) {
         Column(
@@ -120,7 +128,10 @@ fun ShowScreen(
                 ) {
                     RoundButtonPlain(onBack) { Draw.Chevron(22.dp, Ink.Text, pointsLeft = true) }
                     Spacer(Modifier.weight(1f))
-                    RoundButtonPlain({ confirmDelete = !confirmDelete }) {
+                    RoundButtonPlain({ sharing = !sharing; confirmDelete = false }) {
+                        Draw.Share(20.dp, Ink.Text)
+                    }
+                    RoundButtonPlain({ confirmDelete = !confirmDelete; sharing = false }) {
                         Draw.Cross(18.dp, Ink.Text, circled = true)
                     }
                 }
@@ -153,6 +164,56 @@ fun ShowScreen(
             }
 
             Column(Modifier.padding(horizontal = 18.dp)) {
+
+                // --- sending it to somebody ---
+                // Three openers rather than a text field. Typing the message is the
+                // step that stops you sending one, and these are the three reasons
+                // it ever comes up.
+                if (sharing) {
+                    VGap(10.dp)
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(13.dp))
+                            .border(1.dp, Ink.Line, RoundedCornerShape(13.dp))
+                            .padding(vertical = 4.dp),
+                    ) {
+                        for (opener in Share.Opener.entries) {
+                            Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        context.startActivity(
+                                            Share.intentFor(context, library, show, opener)
+                                        )
+                                        sharing = false
+                                    }
+                                    .padding(horizontal = 14.dp, vertical = 13.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                BasicText(
+                                    opener.text,
+                                    style = Type.BodyTight.copy(color = Ink.Text),
+                                    modifier = Modifier.weight(1f),
+                                )
+                                HGap(10.dp)
+                                Draw.Chevron(15.dp, Ink.Ghost)
+                            }
+                        }
+                        // Reads the cache rather than the path. A show can have
+                        // artwork on TMDB that this phone has never downloaded, and
+                        // promising to send it would be a promise we cannot keep.
+                        val hasArt = remember(show.id, show.posterPath) {
+                            PosterCache.fileFor(PosterCache.dirIn(context), show.posterPath) != null
+                        }
+                        BasicText(
+                            if (hasArt) "Sends the name, the service and the artwork."
+                            else "Sends the name and the service.",
+                            style = Type.Meta,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        )
+                    }
+                }
 
                 if (confirmDelete) {
                     VGap(10.dp)

@@ -533,6 +533,26 @@ object Draw {
         }
     }
 
+    /** Three nodes and two arms: the share glyph every Android user already reads. */
+    @Composable
+    fun Share(size: Dp = 20.dp, colour: Color = Ink.Text) {
+        Canvas(Modifier.size(size)) {
+            val w = this.size.width
+            val s = w * 0.085f
+            val r = w * 0.105f
+            val left = Offset(w * 0.26f, w * 0.50f)
+            val topRight = Offset(w * 0.74f, w * 0.26f)
+            val bottomRight = Offset(w * 0.74f, w * 0.74f)
+
+            drawLine(colour, left, topRight, s, StrokeCap.Round)
+            drawLine(colour, left, bottomRight, s, StrokeCap.Round)
+            for (node in listOf(left, topRight, bottomRight)) {
+                drawCircle(Ink.Ground, r + s * 0.9f, node)
+                drawCircle(colour, r, node, style = Stroke(s))
+            }
+        }
+    }
+
     /** Loved it. Filled when the verdict is in, outlined while it is still a question. */
     @Composable
     fun Heart(size: Dp = 18.dp, colour: Color = Ink.Rust, filled: Boolean = false) {

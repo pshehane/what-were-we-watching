@@ -26,5 +26,20 @@
             </intent-filter>
 
         </activity>
+
+        <!--
+          Lets the share sheet read one cached poster. Not exported: the receiving
+          app gets a one-shot read grant on the single file named in the intent,
+          and nothing else in the app is reachable through it.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.posters"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/share_paths" />
+        </provider>
     </application>
 </manifest>

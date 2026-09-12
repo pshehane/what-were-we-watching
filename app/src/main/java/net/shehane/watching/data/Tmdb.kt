@@ -159,6 +159,9 @@ object Tmdb {
         @SerialName("poster_path") val posterPath: String? = null,
         @SerialName("number_of_seasons") val seasonCount: Int? = null,
         @SerialName("number_of_episodes") val episodeCount: Int? = null,
+        // A list, because a show can have run at several lengths over its life.
+        // The first entry is the usual one.
+        @SerialName("episode_run_time") val runTimes: List<Int> = emptyList(),
         val overview: String? = null,
     ) {
         val year: Int? get() = firstAirDate?.take(4)?.toIntOrNull()

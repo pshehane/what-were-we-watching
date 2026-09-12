@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -100,6 +101,8 @@ private fun App() {
     val seasonCache by vm.seasons.collectAsStateWithLifecycle()
     val seasonsLoading by vm.seasonsLoading.collectAsStateWithLifecycle()
     val recapped by vm.recapped.collectAsStateWithLifecycle()
+    val budget by vm.budget.collectAsStateWithLifecycle()
+    val budgetOpen by vm.budgetOpen.collectAsStateWithLifecycle()
 
     val insets = WindowInsets.safeDrawing.asPaddingValues()
 
@@ -108,7 +111,18 @@ private fun App() {
         ActivityResultContracts.StartActivityForResult()
     ) { result -> vm.onSignInResult(result.data) }
 
-    LaunchedEffect(Unit) { vm.onResumed() }
+    // Every resume, not once per composition. The composition survives being
+    // backgrounded, so LaunchedEffect(Unit) fired only on a cold start: coming
+    // back to the app after a week pulled nothing from Drive until you happened
+    // to change something yourself.
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) vm.onResumed()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     // Back undoes the last thing that happened, whatever that was, and never
     // leaves the app: at the root it is simply consumed. Order matters - a sheet
@@ -140,6 +154,11 @@ private fun App() {
                     onReactivate = vm::reactivate,
                     onSearch = { vm.go(Screen.Search) },
                     onSettings = { vm.go(Screen.Profiles) },
+                    budget = budget,
+                    budgetOpen = budgetOpen,
+                    onBudgetOpen = vm::setBudgetOpen,
+                    onSetBudget = vm::setBudget,
+                    onClearBudget = vm::clearBudget,
                     insets = insets,
                 )
                 BottomBar(

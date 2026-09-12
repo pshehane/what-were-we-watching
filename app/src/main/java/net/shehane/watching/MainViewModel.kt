@@ -20,6 +20,7 @@ import net.shehane.watching.data.LibraryStore
 import net.shehane.watching.data.OnDevice
 import net.shehane.watching.data.Recap
 import net.shehane.watching.data.Suggest
+import net.shehane.watching.data.TimeLeft
 import net.shehane.watching.data.Summary
 import net.shehane.watching.data.Tmdb
 import net.shehane.watching.model.Library
@@ -213,6 +214,30 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun couch(): Couch.Result = Couch.build(library.value, _seated.value)
+
+    // ------------------------------------------------------- how long we have
+
+    /**
+     * Kept in memory rather than in the library. It is about tonight, and a
+     * bedtime synced to another phone a week later would be noise.
+     */
+    private val _budget = MutableStateFlow(TimeLeft.none())
+    val budget: StateFlow<TimeLeft.Budget> = _budget.asStateFlow()
+
+    private val _budgetOpen = MutableStateFlow(false)
+    val budgetOpen: StateFlow<Boolean> = _budgetOpen.asStateFlow()
+
+    fun setBudgetOpen(open: Boolean) { _budgetOpen.value = open }
+
+    fun setBudget(budget: TimeLeft.Budget) {
+        _budget.value = budget
+        _budgetOpen.value = false
+    }
+
+    fun clearBudget() {
+        _budget.value = TimeLeft.none()
+        _budgetOpen.value = false
+    }
 
     // ----------------------------------------------------------------- shows
 
@@ -486,13 +511,26 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun fillDetails(showId: String) {
         val show = library.value.showOrNull(showId) ?: return
         val tmdbId = show.tmdbId ?: return
-        if (show.seasonCount != null && show.wikipediaUrl != null) return
+        // Any one of these missing is reason enough to ask. Runtime was added
+        // after the others, so every show recorded before it has none.
+        if (show.seasonCount != null && show.wikipediaUrl != null &&
+            show.runtimeMinutes != null
+        ) {
+            return
+        }
         if (!detailsAsked.add(showId)) return
 
         viewModelScope.launch {
-            if (show.seasonCount == null) {
+            if (show.seasonCount == null || show.runtimeMinutes == null) {
                 runCatching { Tmdb.detail(tmdbId) }
-                    .onSuccess { store.fillDetails(showId, it.seasonCount, it.episodeCount) }
+                    .onSuccess {
+                        store.fillDetails(
+                            showId,
+                            it.seasonCount,
+                            it.episodeCount,
+                            it.runTimes.firstOrNull(),
+                        )
+                    }
             }
             if (show.wikipediaUrl == null) {
                 runCatching { Tmdb.wikipediaUrl(tmdbId, show.title, show.year) }
@@ -500,6 +538,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             }
             pushSoon()
         }
+    }
+
+    fun setRuntime(showId: String, minutes: Int?) {
+        store.setRuntime(showId, minutes)
+        pushSoon()
     }
 
     fun setWatchedWith(showId: String, people: List<String>) {
@@ -1011,6 +1054,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             wikipediaUrl = d.wikipediaUrl,
             seasonCount = d.detail?.seasonCount,
             episodeCount = d.detail?.episodeCount,
+            runtimeMinutes = d.detail?.runTimes?.firstOrNull(),
             overview = d.detail?.overview ?: d.result.overview,
             serviceId = d.serviceId,
             profileId = d.profileId,

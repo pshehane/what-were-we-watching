@@ -113,6 +113,14 @@ data class Show(
     val wikipediaUrl: String? = null,
     val seasonCount: Int? = null,
     val episodeCount: Int? = null,
+    /**
+     * How long one episode runs, in minutes.
+     *
+     * An average, because that is what TMDB publishes per show and what the couch
+     * needs. A drama that is 42 one week and 47 the next is still "about 45", and
+     * the time budget is fuzzy by ten minutes anyway.
+     */
+    val runtimeMinutes: Int? = null,
     val overview: String? = null,
 
     // --- yours ---

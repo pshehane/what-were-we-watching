@@ -15,7 +15,7 @@ object Csv {
 
     private val HEADER = listOf(
         "Title", "Year", "Service", "Profile", "Watched with",
-        "Season", "Episode", "Status", "Verdict", "Comes back",
+        "Season", "Episode", "Minutes", "Status", "Verdict", "Comes back",
         "Last watched", "Added", "TMDB id", "Wikipedia",
     )
 
@@ -59,6 +59,7 @@ object Csv {
             // zero means, and "not started" is what the season column already says.
             if (show.isWishlist || show.position.notStarted) ""
             else show.position.episode.toString(),
+            show.runtimeMinutes?.toString() ?: "",
             show.state,
             when (show.liked) {
                 true -> "loved"

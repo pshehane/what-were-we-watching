@@ -23,8 +23,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,9 +41,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.time.LocalTime
 import net.shehane.watching.data.Clock
 import net.shehane.watching.data.Couch
 import net.shehane.watching.data.LibraryStore
+import net.shehane.watching.data.TimeLeft
 import net.shehane.watching.model.Library
 import net.shehane.watching.model.Show
 import net.shehane.watching.ui.theme.Clip
@@ -75,8 +79,23 @@ fun CouchScreen(
     onReactivate: (String) -> Unit,
     onSearch: () -> Unit,
     onSettings: () -> Unit,
+    budget: TimeLeft.Budget,
+    budgetOpen: Boolean,
+    onBudgetOpen: (Boolean) -> Unit,
+    onSetBudget: (TimeLeft.Budget) -> Unit,
+    onClearBudget: () -> Unit,
     insets: androidx.compose.foundation.layout.PaddingValues,
 ) {
+    // One clock for the screen, re-read every half minute. Without this the
+    // "until 11pm" answer would be whatever it was when the screen was drawn.
+    var now by remember { mutableStateOf(LocalTime.now()) }
+    LaunchedEffect(budget.kind) {
+        while (true) {
+            now = LocalTime.now()
+            kotlinx.coroutines.delay(30_000)
+        }
+    }
+    val minutesLeft = if (budget.isSet) TimeLeft.remaining(budget, now) else 0
     Box(Modifier.fillMaxSize().background(Ink.Ground)) {
 
         LazyColumn(
@@ -103,7 +122,16 @@ fun CouchScreen(
                     CouchBar(library, seated, onToggleSeat)
                     VGap(10.dp)
                     BasicText(text = summaryLine(library, seated, result), style = Type.Body)
-                    VGap(10.dp)
+                    VGap(12.dp)
+                    TimeBar(
+                        budget = budget,
+                        open = budgetOpen,
+                        now = now,
+                        onOpen = onBudgetOpen,
+                        onSet = onSetBudget,
+                        onClear = onClearBudget,
+                    )
+                    VGap(12.dp)
                     Divider(Ink.LineSoft)
                     VGap(14.dp)
                 }
@@ -126,7 +154,8 @@ fun CouchScreen(
                             onSnooze = { onSnooze(match.show.id) },
                             onAbandon = { onAbandon(match.show.id) },
                         ) {
-                            FullCard(library, match.show, onOpen = { onOpenShow(match.show.id) }, onBump = { onBump(match.show.id) })
+                            FullCard(library, match.show, fitsFor(match.show, budget, minutesLeft), now,
+                                onOpen = { onOpenShow(match.show.id) }, onBump = { onBump(match.show.id) })
                         }
                     }
                 }
@@ -145,7 +174,8 @@ fun CouchScreen(
                             onSnooze = { onSnooze(match.show.id) },
                             onAbandon = { onAbandon(match.show.id) },
                         ) {
-                            PartialCard(library, match, onOpen = { onOpenShow(match.show.id) })
+                            PartialCard(library, match, fitsFor(match.show, budget, minutesLeft), now,
+                                onOpen = { onOpenShow(match.show.id) })
                         }
                     }
                 }
@@ -251,6 +281,165 @@ private fun CouchBar(library: Library, seated: Set<String>, onToggle: (String) -
     }
 }
 
+/**
+ * What this show does to the time you have.
+ *
+ * It says the number of episodes and when they would end, because "3 episodes"
+ * and "done by 10:45" answer two different questions people ask at the same time.
+ * A guessed runtime is marked, since a wrong guess is worse than an obvious one.
+ */
+@Composable
+private fun FitLine(show: Show, fits: TimeLeft.Fits, now: LocalTime) {
+    val each = TimeLeft.episodeLength(show)
+
+    val text = when {
+        fits.fitsNothing -> "Not even one, at about ${each}m each"
+        else -> buildString {
+            // "about" rather than a trailing "(guessing 45m)", which ran off the
+            // end of the card on every show whose runtime is not known.
+            if (fits.assumed) append("about ")
+            append(fits.episodes)
+            append(if (fits.episodes == 1) " episode" else " episodes")
+            append(" · done by ")
+            append(TimeLeft.endsAt(now, fits.runtime))
+            if (fits.overrunMinutes > 0) append(", ${fits.overrunMinutes}m over")
+        }
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Draw.Clock(13.dp, if (fits.fitsNothing) Ink.Ghost else Ink.Cool)
+        HGap(7.dp)
+        BasicText(
+            text,
+            style = Type.Meta.copy(
+                fontSize = 11.sp,
+                color = if (fits.fitsNothing) Ink.Ghost else Ink.Cool,
+            ),
+            maxLines = 1,
+            overflow = Clip,
+        )
+    }
+}
+
+/** Null when no budget is set, so the cards say nothing rather than guessing. */
+private fun fitsFor(show: Show, budget: TimeLeft.Budget, minutesLeft: Int): TimeLeft.Fits? =
+    if (!budget.isSet) null else TimeLeft.fits(show, minutesLeft)
+
+/**
+ * How long we have, and how to say it.
+ *
+ * Two ways in, because people say it both ways: "we have an hour" and "I want to
+ * be in bed by eleven". They are the same arithmetic once the clock is read.
+ */
+@Composable
+private fun TimeBar(
+    budget: TimeLeft.Budget,
+    open: Boolean,
+    now: LocalTime,
+    onOpen: (Boolean) -> Unit,
+    onSet: (TimeLeft.Budget) -> Unit,
+    onClear: () -> Unit,
+) {
+    val left = TimeLeft.remaining(budget, now)
+
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(11.dp))
+                .then(
+                    if (budget.isSet) Modifier.background(Ink.AmberWash)
+                    else Modifier.border(1.dp, Ink.LineSoft, RoundedCornerShape(11.dp))
+                )
+                .clickable { onOpen(!open) }
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Draw.Clock(16.dp, if (budget.isSet) Ink.Amber else Ink.Faint)
+            HGap(9.dp)
+            BasicText(
+                text = when {
+                    !budget.isSet -> "How long have we got?"
+                    left <= 0 -> "Time is up"
+                    budget.kind == TimeLeft.Kind.BEDTIME ->
+                        "Until ${TimeLeft.spellClock(budget.endsAt)} · ${TimeLeft.spell(left)} left"
+                    else -> "${TimeLeft.spell(left)} to watch"
+                },
+                style = Type.BodyTight.copy(
+                    color = if (budget.isSet) Ink.Amber else Ink.Muted,
+                ),
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = Clip,
+            )
+            if (budget.isSet) {
+                BasicText(
+                    "clear",
+                    style = Type.Meta.copy(color = Ink.Faint),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable(onClick = onClear)
+                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                )
+            } else {
+                Draw.Chevron(13.dp, Ink.Ghost)
+            }
+        }
+
+        if (!open) return
+
+        VGap(10.dp)
+        BasicText("FOR HOW LONG", style = Type.Eyebrow.copy(color = Ink.Faint))
+        VGap(8.dp)
+        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            for (minutes in TimeLeft.PRESETS) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .border(1.dp, Ink.Line, RoundedCornerShape(10.dp))
+                        .clickable { onSet(TimeLeft.duration(minutes)) },
+                    contentAlignment = Alignment.Center,
+                ) { BasicText(TimeLeft.spell(minutes), style = Type.BodyTight.copy(color = Ink.Text)) }
+            }
+        }
+
+        VGap(14.dp)
+        BasicText("OR UNTIL", style = Type.Eyebrow.copy(color = Ink.Faint))
+        VGap(8.dp)
+        // Half-hour steps from a sensible default, which is how bedtimes are said.
+        val first = TimeLeft.defaultBedtime(now)
+        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            for (i in 0 until 4) {
+                val at = first + i * 30
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .border(1.dp, Ink.Line, RoundedCornerShape(10.dp))
+                        .clickable { onSet(TimeLeft.bedtime(at)) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    BasicText(
+                        TimeLeft.spellClock(at),
+                        style = Type.BodyTight.copy(color = Ink.Text),
+                        maxLines = 1,
+                        overflow = Clip,
+                    )
+                }
+            }
+        }
+        VGap(9.dp)
+        BasicText(
+            "An episode can run ${TimeLeft.SLACK_MINUTES} minutes over and still count. " +
+                "Nobody stops one that close to the end.",
+            style = Type.Meta,
+        )
+    }
+}
+
 private fun summaryLine(library: Library, seated: Set<String>, result: Couch.Result): String {
     if (seated.isEmpty()) return "Nobody seated. Tap a face above and the list fills in."
     val who = Couch.nameList(library, library.people.map { it.id }.filter { it in seated })
@@ -267,7 +456,14 @@ private fun summaryLine(library: Library, seated: Set<String>, result: Couch.Res
 // ---------------------------------------------------------------------- cards
 
 @Composable
-private fun FullCard(library: Library, show: Show, onOpen: () -> Unit, onBump: () -> Unit) {
+private fun FullCard(
+    library: Library,
+    show: Show,
+    fits: TimeLeft.Fits?,
+    now: LocalTime,
+    onOpen: () -> Unit,
+    onBump: () -> Unit,
+) {
     val people = show.watchedWith.mapNotNull { library.personOrNull(it) }
     val me = library.personOrNull(LibraryStore.ME_ID)
     val everyone = (listOfNotNull(me) + people)
@@ -308,6 +504,10 @@ private fun FullCard(library: Library, show: Show, onOpen: () -> Unit, onBump: (
                 HGap(10.dp)
                 BasicText(Clock.ago(show.lastWatchedAt ?: show.addedAt), style = Type.Meta)
             }
+            if (fits != null) {
+                VGap(5.dp)
+                FitLine(show, fits, now)
+            }
         }
         HGap(8.dp)
         RoundButton(onClick = onBump) {
@@ -323,7 +523,13 @@ private fun FullCard(library: Library, show: Show, onOpen: () -> Unit, onBump: (
 }
 
 @Composable
-private fun PartialCard(library: Library, match: Couch.Match, onOpen: () -> Unit) {
+private fun PartialCard(
+    library: Library,
+    match: Couch.Match,
+    fits: TimeLeft.Fits?,
+    now: LocalTime,
+    onOpen: () -> Unit,
+) {
     val show = match.show
     Row(
         modifier = Modifier
@@ -371,6 +577,10 @@ private fun PartialCard(library: Library, match: Couch.Match, onOpen: () -> Unit
                 maxLines = 1,
                 overflow = Clip,
             )
+            if (fits != null) {
+                VGap(4.dp)
+                FitLine(show, fits, now)
+            }
         }
         HGap(6.dp)
         Draw.Chevron(16.dp, Ink.Ghost)

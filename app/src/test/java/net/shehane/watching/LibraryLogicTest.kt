@@ -175,12 +175,17 @@ class LibraryLogicTest {
         val lib = library(
             show("1", "Someday", emptyList(), state = Show.STATE_WISHLIST),
         )
-        val row = Csv.render(lib).lines()[1].split(",")
+        // Read by column name. Positions shift whenever a column is added, and a
+        // test that breaks for that reason says nothing about what it is testing.
+        val lines = Csv.render(lib).lines()
+        val header = lines[0].split(",")
+        val row = lines[1].split(",")
+        fun col(name: String) = row[header.indexOf(name)]
 
-        assertEquals("Someday", row[0])
-        assertEquals("", row[5])
-        assertEquals("", row[6])
-        assertEquals("wishlist", row[7])
+        assertEquals("Someday", col("Title"))
+        assertEquals("", col("Season"))
+        assertEquals("", col("Episode"))
+        assertEquals("wishlist", col("Status"))
     }
 
     // ------------------------------------------------------------- the merge

@@ -130,6 +130,7 @@ class LibraryStore(private val context: Context) {
         wikipediaUrl: String? = null,
         seasonCount: Int? = null,
         episodeCount: Int? = null,
+        runtimeMinutes: Int? = null,
         overview: String? = null,
         serviceId: String?,
         profileId: String?,
@@ -150,6 +151,7 @@ class LibraryStore(private val context: Context) {
                     wikipediaUrl = wikipediaUrl,
                     seasonCount = seasonCount,
                     episodeCount = episodeCount,
+                    runtimeMinutes = runtimeMinutes,
                     overview = overview,
                     serviceId = serviceId,
                     profileId = profileId,
@@ -234,7 +236,12 @@ class LibraryStore(private val context: Context) {
      * season is the last one, and "Finished S7" on a seven-season show offers an
      * eighth that does not exist.
      */
-    fun fillDetails(id: String, seasons: Int?, episodes: Int?) = updateShow(id) { show ->
+    fun fillDetails(
+        id: String,
+        seasons: Int?,
+        episodes: Int?,
+        runtime: Int? = null,
+    ) = updateShow(id) { show ->
         // What is already stored wins. The add flow asks TMDB properly and this is
         // only a patch for records that never got that, so it fills gaps and
         // overwrites nothing.
@@ -242,6 +249,7 @@ class LibraryStore(private val context: Context) {
         show.copy(
             seasonCount = count,
             episodeCount = show.episodeCount ?: episodes,
+            runtimeMinutes = show.runtimeMinutes ?: runtime,
             // A position past the end of the show could only have come from not
             // knowing where the end was. Pull it back to the last real season.
             position =
@@ -254,6 +262,11 @@ class LibraryStore(private val context: Context) {
     }
 
     fun setWikipediaUrl(id: String, url: String) = updateShow(id) { it.copy(wikipediaUrl = url) }
+
+    /** Set by hand when TMDB has no runtime, or has the wrong one. */
+    fun setRuntime(id: String, minutes: Int?) = updateShow(id) {
+        it.copy(runtimeMinutes = minutes?.coerceIn(1, 600))
+    }
 
     /**
      * Back to no opinion. The show stays finished: you are taking back what you

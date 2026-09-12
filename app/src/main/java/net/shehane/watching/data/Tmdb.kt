@@ -20,8 +20,8 @@ object Tmdb {
     const val IMAGE_SMALL = "https://image.tmdb.org/t/p/w185"
     const val IMAGE_LARGE = "https://image.tmdb.org/t/p/w500"
 
-    /** Streaming availability is per country; this is the one place that assumes US. */
-    const val REGION = "US"
+    /** Fallback only. The real value is Library.homeCountry, set on the setup screen. */
+    const val DEFAULT_REGION = "US"
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
@@ -90,7 +90,7 @@ object Tmdb {
      * opaque, and matching on the name means a service the user typed in by hand
      * still lines up without anyone looking an id up.
      */
-    suspend fun providerNames(tmdbId: Int, region: String = REGION): List<String> {
+    suspend fun providerNames(tmdbId: Int, region: String = DEFAULT_REGION): List<String> {
         val body = Http.getString(withKey("$BASE/tv/$tmdbId/watch/providers"), authHeaders())
         val root = json.parseToJsonElement(body).jsonObject
         val results = root["results"]?.jsonObject ?: return emptyList()
@@ -137,6 +137,74 @@ object Tmdb {
             else -> s
         }
         return s
+    }
+
+
+    // ------------------------------------------------------- travelling
+
+    @Serializable
+    data class Country(
+        @SerialName("iso_3166_1") val code: String,
+        @SerialName("english_name") val name: String,
+    )
+
+    /** Every country TMDB knows, for the picker. Fetched once and held for the session. */
+    private var countryCache: List<Country>? = null
+
+    suspend fun countries(): List<Country> {
+        countryCache?.let { return it }
+        val body = Http.getString(withKey("$BASE/configuration/countries?language=en-US"), authHeaders())
+        val list = json.decodeFromString(kotlinx.serialization.builtins.ListSerializer(Country.serializer()), body)
+            .filter { it.name.isNotBlank() }
+            .sortedBy { it.name }
+        countryCache = list
+        return list
+    }
+
+    /**
+     * What a show costs in one country. Rights are sold per country, so a show on
+     * Hulu at home can be on Netflix abroad, or missing entirely. That difference
+     * is the entire point of the travelling screen.
+     */
+    data class Availability(
+        val included: List<String>,
+        val rentOrBuy: List<String>,
+        val link: String?,
+    ) {
+        val isStreamable: Boolean get() = included.isNotEmpty()
+        val isAnywhere: Boolean get() = included.isNotEmpty() || rentOrBuy.isNotEmpty()
+    }
+
+    suspend fun availability(tmdbId: Int, region: String): Availability {
+        val body = Http.getString(withKey("$BASE/tv/$tmdbId/watch/providers"), authHeaders())
+        val forRegion = json.parseToJsonElement(body).jsonObject["results"]?.jsonObject?.get(region)?.jsonObject
+            ?: return Availability(emptyList(), emptyList(), null)
+
+        fun names(key: String): List<String> {
+            val arr = forRegion[key] as? kotlinx.serialization.json.JsonArray ?: return emptyList()
+            return arr.mapNotNull { (it as? JsonObject)?.get("provider_name")?.jsonPrimitive?.contentOrNull }
+        }
+
+        return Availability(
+            included = (names("flatrate") + names("free") + names("ads")).distinct(),
+            rentOrBuy = (names("rent") + names("buy")).distinct(),
+            link = forRegion["link"]?.jsonPrimitive?.contentOrNull,
+        )
+    }
+
+    /**
+     * What is popular and included with a subscription in one country. Discover
+     * rather than the plain popular list, because "popular" with no region says
+     * nothing about whether you could actually watch it where you are standing.
+     */
+    suspend fun popularIn(region: String): List<SearchItem> {
+        if (!isConfigured) return emptyList()
+        val url = withKey(
+            "$BASE/discover/tv?watch_region=$region&with_watch_monetization_types=flatrate" +
+                "&sort_by=popularity.desc&page=1&language=en-US"
+        )
+        val body = Http.getString(url, authHeaders())
+        return json.decodeFromString(SearchResponse.serializer(), body).results
     }
 
     // ------------------------------------------------------------- wikipedia

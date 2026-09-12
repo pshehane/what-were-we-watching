@@ -43,6 +43,7 @@ import net.shehane.watching.ui.Draw
 import net.shehane.watching.ui.HGap
 import net.shehane.watching.ui.ProfilesScreen
 import net.shehane.watching.ui.ShowScreen
+import net.shehane.watching.ui.WishlistScreen
 import net.shehane.watching.ui.VGap
 import net.shehane.watching.ui.theme.Ink
 import net.shehane.watching.ui.theme.Type
@@ -75,6 +76,11 @@ private fun App() {
     val searchError by vm.searchError.collectAsStateWithLifecycle()
     val syncState by vm.syncState.collectAsStateWithLifecycle()
     val toast by vm.toast.collectAsStateWithLifecycle()
+    val viewingCountry by vm.viewingCountry.collectAsStateWithLifecycle()
+    val countries by vm.countries.collectAsStateWithLifecycle()
+    val availability by vm.availability.collectAsStateWithLifecycle()
+    val popularHere by vm.popularHere.collectAsStateWithLifecycle()
+    val travelLoading by vm.travelLoading.collectAsStateWithLifecycle()
 
     val insets = WindowInsets.safeDrawing.asPaddingValues()
 
@@ -104,9 +110,10 @@ private fun App() {
                 )
                 BottomBar(
                     insets = insets,
+                    selected = Screen.Couch,
                     onCouch = { vm.go(Screen.Couch) },
                     onAdd = { vm.go(Screen.Search) },
-                    onShelf = { vm.go(Screen.Profiles) },
+                    onWishlist = { vm.go(Screen.Wishlist) },
                 )
             }
 
@@ -177,6 +184,33 @@ private fun App() {
             is Screen.About -> {
                 AboutScreen(onBack = { vm.go(Screen.Profiles) }, insets = insets)
             }
+
+            is Screen.Wishlist -> {
+                LaunchedEffect(Unit) { vm.loadCountries(); vm.loadTravel() }
+                WishlistScreen(
+                    library = library,
+                    wishlist = vm.wishlist(),
+                    viewingCountry = viewingCountry,
+                    countries = countries,
+                    availability = availability,
+                    popularHere = popularHere,
+                    loading = travelLoading,
+                    onViewCountry = vm::viewCountry,
+                    onSetHome = vm::setHomeCountry,
+                    onStartWatching = vm::startWatching,
+                    onOpenShow = { vm.go(Screen.ShowDetail(it)) },
+                    onRemove = vm::deleteShow,
+                    onAdd = { vm.go(Screen.Search) },
+                    insets = insets,
+                )
+                BottomBar(
+                    insets = insets,
+                    selected = Screen.Wishlist,
+                    onCouch = { vm.go(Screen.Couch) },
+                    onAdd = { vm.go(Screen.Search) },
+                    onWishlist = { vm.go(Screen.Wishlist) },
+                )
+            }
         }
 
         draft?.let {
@@ -185,7 +219,8 @@ private fun App() {
                 draft = it,
                 onUpdate = vm::updateDraft,
                 onAddProfile = vm::addProfile,
-                onCommit = vm::commitAdd,
+                onCommit = { vm.commitAdd(toWishlist = false) },
+                onWishlist = { vm.commitAdd(toWishlist = true) },
                 onDismiss = vm::cancelAdd,
                 bottomInset = insets,
             )
@@ -214,9 +249,10 @@ private fun nextPersonColour(count: Int) = PERSON_COLOURS[count % PERSON_COLOURS
 @Composable
 private fun BottomBar(
     insets: PaddingValues,
+    selected: Screen,
     onCouch: () -> Unit,
     onAdd: () -> Unit,
-    onShelf: () -> Unit,
+    onWishlist: () -> Unit,
 ) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
         Row(
@@ -228,7 +264,10 @@ private fun BottomBar(
                 .padding(horizontal = 26.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            BarItem("Couch", selected = true, onClick = onCouch) { Draw.Couch(22.dp, Ink.Amber) }
+            val onCouchTab = selected is Screen.Couch
+            BarItem("Couch", selected = onCouchTab, onClick = onCouch) {
+                Draw.Couch(22.dp, if (onCouchTab) Ink.Amber else Ink.Faint)
+            }
             Spacer(Modifier.weight(1f))
             Box(
                 Modifier
@@ -239,7 +278,10 @@ private fun BottomBar(
                 contentAlignment = Alignment.Center,
             ) { Draw.Plus(26.dp, Ink.Ground) }
             Spacer(Modifier.weight(1f))
-            BarItem("Setup", selected = false, onClick = onShelf) { Draw.Shelf(22.dp, Ink.Faint) }
+            val onWishTab = selected is Screen.Wishlist
+            BarItem("Wishlist", selected = onWishTab, onClick = onWishlist) {
+                Draw.Shelf(22.dp, if (onWishTab) Ink.Amber else Ink.Faint)
+            }
         }
     }
 }

@@ -152,6 +152,37 @@ class LibraryLogicTest {
         assertEquals("Newer", result.primary[0].show.title)
     }
 
+    @Test
+    fun `a wishlist show is never offered on the couch`() {
+        // Nothing to resume: it was never started. It belongs on the wishlist
+        // screen, not among the shows you are part-way through.
+        val lib = library(
+            show("1", "Started", emptyList()),
+            show("2", "Someday", emptyList(), state = Show.STATE_WISHLIST),
+        )
+        val result = Couch.build(lib, setOf("me"))
+
+        assertEquals(listOf("Started"), result.primary.map { it.show.title })
+        assertEquals(0, result.secondary.size)
+        assertEquals(0, result.snoozed.size)
+        assertEquals(0, result.abandoned.size)
+    }
+
+    @Test
+    fun `a wishlist row carries no episode position in the csv`() {
+        // The field holds S1 E1 by default, and printing that would say the show
+        // had been started when it has not.
+        val lib = library(
+            show("1", "Someday", emptyList(), state = Show.STATE_WISHLIST),
+        )
+        val row = Csv.render(lib).lines()[1].split(",")
+
+        assertEquals("Someday", row[0])
+        assertEquals("", row[5])
+        assertEquals("", row[6])
+        assertEquals("wishlist", row[7])
+    }
+
     // ------------------------------------------------------------- the merge
 
     @Test

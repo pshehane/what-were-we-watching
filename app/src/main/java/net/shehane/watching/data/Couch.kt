@@ -54,6 +54,9 @@ object Couch {
 
         for (show in library.shows) {
             when {
+                // Not started, so there is nothing to resume. It lives on the
+                // wishlist screen instead.
+                show.isWishlist -> continue
                 show.isSnoozed -> { snoozed += show; continue }
                 show.isDone -> { abandoned += show; continue }
             }

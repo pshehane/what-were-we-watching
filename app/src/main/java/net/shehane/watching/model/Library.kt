@@ -15,6 +15,12 @@ data class Library(
     val updatedAt: String = "",
     val people: List<Person> = emptyList(),
     val services: List<Service> = emptyList(),
+    /**
+     * Where you normally are, as an ISO 3166-1 code. Streaming rights are sold by
+     * country, so this decides which answer the add flow trusts, and it is what
+     * the wishlist compares against when you are travelling.
+     */
+    val homeCountry: String = "US",
     val shows: List<Show> = emptyList(),
     val deleted: List<Tombstone> = emptyList(),
 ) {
@@ -103,12 +109,15 @@ data class Show(
         const val STATE_ABANDONED = "abandoned"
         /** Watched to the end. Kept apart from abandoned so the CSV stays truthful. */
         const val STATE_FINISHED = "finished"
+        /** Want to watch, not started. No position yet, and never on the couch list. */
+        const val STATE_WISHLIST = "wishlist"
     }
 
     val isActive: Boolean get() = state == STATE_ACTIVE
     val isSnoozed: Boolean get() = state == STATE_SNOOZED
     val isAbandoned: Boolean get() = state == STATE_ABANDONED
     val isFinished: Boolean get() = state == STATE_FINISHED
+    val isWishlist: Boolean get() = state == STATE_WISHLIST
     /** Both sit below everything else, but they mean different things. */
     val isDone: Boolean get() = isAbandoned || isFinished
 

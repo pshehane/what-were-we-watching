@@ -255,6 +255,7 @@ fun AddSheet(
     onUpdate: ((net.shehane.watching.Draft) -> net.shehane.watching.Draft) -> Unit,
     onAddProfile: (String, String) -> String,
     onCommit: () -> Unit,
+    onWishlist: () -> Unit,
     onDismiss: () -> Unit,
     bottomInset: PaddingValues,
 ) {
@@ -492,23 +493,45 @@ fun AddSheet(
                 VGap(18.dp)
             }
 
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
-                    .padding(bottom = 22.dp + bottomInset.calculateBottomPadding())
-                    .height(56.dp)
-                    .clip(RoundedCornerShape(15.dp))
-                    .background(Ink.Amber)
-                    .clickable(onClick = onCommit),
-                contentAlignment = Alignment.Center,
+                    .padding(bottom = 22.dp + bottomInset.calculateBottomPadding()),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Draw.Check(19.dp, Ink.Ground)
-                    HGap(9.dp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(Ink.Amber)
+                        .clickable(onClick = onCommit),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Draw.Check(19.dp, Ink.Ground)
+                        HGap(9.dp)
+                        BasicText(
+                            "Put it on the couch",
+                            style = Type.Button.copy(color = Ink.Ground, fontSize = 16.sp),
+                        )
+                    }
+                }
+                VGap(9.dp)
+                // Something to watch one day is not something in progress, and
+                // putting it on the couch would sit there pretending to be at S1 E1.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp)
+                        .clip(RoundedCornerShape(13.dp))
+                        .border(1.dp, Ink.Line, RoundedCornerShape(13.dp))
+                        .clickable(onClick = onWishlist),
+                    contentAlignment = Alignment.Center,
+                ) {
                     BasicText(
-                        "Put it on the couch",
-                        style = Type.Button.copy(color = Ink.Ground, fontSize = 16.sp),
+                        "Just the wishlist, not started",
+                        style = Type.BodyTight.copy(color = Ink.Muted, fontSize = 13.5.sp),
                     )
                 }
             }

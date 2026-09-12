@@ -135,6 +135,7 @@ class LibraryStore(private val context: Context) {
         profileId: String?,
         watchedWith: List<String>,
         position: Position = Position(),
+        state: String = Show.STATE_ACTIVE,
     ): String {
         val id = UUID.randomUUID().toString()
         val now = Clock.now()
@@ -154,7 +155,7 @@ class LibraryStore(private val context: Context) {
                     profileId = profileId,
                     watchedWith = watchedWith.filter { it != ME_ID },
                     position = position,
-                    state = Show.STATE_ACTIVE,
+                    state = state,
                     addedAt = now,
                     updatedAt = now,
                 )
@@ -206,6 +207,29 @@ class LibraryStore(private val context: Context) {
 
     fun reactivate(id: String) = updateShow(id) {
         it.copy(state = Show.STATE_ACTIVE, snoozeUntil = null)
+    }
+
+    /** Park it: something to watch, not something in progress. */
+    fun toWishlist(id: String) = updateShow(id) {
+        it.copy(state = Show.STATE_WISHLIST, snoozeUntil = null)
+    }
+
+    /**
+     * Off the wishlist and onto the couch. The position resets, because a wishlist
+     * entry never had one and whatever is in the field is meaningless.
+     */
+    fun startWatching(id: String) = updateShow(id) {
+        it.copy(
+            state = Show.STATE_ACTIVE,
+            snoozeUntil = null,
+            position = Position(1, 1),
+            lastWatchedAt = Clock.now(),
+        )
+    }
+
+    /** Where you normally are. Streaming rights are sold by country. */
+    fun setHomeCountry(code: String) = update { lib ->
+        lib.copy(homeCountry = code.uppercase())
     }
 
     fun deleteShow(id: String) = update { lib ->

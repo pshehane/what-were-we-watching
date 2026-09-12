@@ -35,7 +35,8 @@ object Csv {
     private fun statusRank(show: Show): Int = when (show.state) {
         Show.STATE_ACTIVE -> 0
         Show.STATE_SNOOZED -> 1
-        else -> 2
+        Show.STATE_WISHLIST -> 2
+        else -> 3
     }
 
     private fun row(library: Library, show: Show): List<String> {
@@ -51,8 +52,10 @@ object Csv {
             service?.name ?: "",
             profile?.name ?: "",
             withNames,
-            show.position.season.toString(),
-            show.position.episode.toString(),
+            // A wishlist entry was never started, so writing S1 E1 would be a
+            // small lie in a file meant for reading.
+            if (show.isWishlist) "" else show.position.season.toString(),
+            if (show.isWishlist) "" else show.position.episode.toString(),
             show.state,
             if (show.isSnoozed) Clock.toCsvDate(show.snoozeUntil) else "",
             Clock.toCsvDate(show.lastWatchedAt),

@@ -15,6 +15,8 @@ Tap the people who are actually sitting down. The list re-sorts instantly into s
 - **Add in one tap.** Search is the whole flow. Who is watching comes from the couch bar, the service from where TMDB says it streams, the profile from the default you marked, and the episode from the beginning.
 - **Track by episode or by season.** A `+1` on the card, or a "Finished S2" button when you have been watching without opening the app.
 - **Two ways to demote.** Swipe left: the first zone marks a show *not in the mood* — half height, no artwork, and it comes back on its own after two weeks. Dragging further *shelves* it — the smallest row on the screen, still searchable, and it stays down until you undo it.
+- **Park what you have not started.** The wishlist holds shows you mean to watch. They never appear on the couch list, because there is nothing to resume.
+- **Tourist TV.** Set a country you are visiting and the wishlist tells you where each show can be watched *there*, plus what is popular locally. Streaming rights are sold per country, so a show on Hulu at home can be on Disney+ in Japan.
 - **Your data stays yours.** Everything lives in a plain `library.json`, with a `library.csv` written beside it that opens in Sheets or Excel.
 
 ## Requirements
@@ -114,6 +116,7 @@ One JSON file is the record. Every entry carries its own `updatedAt`, which is w
   "people":   [ { "id": "ana", "name": "Ana", "color": "#6FC0DE" } ],
   "services": [ { "id": "max", "name": "Max", "defaultProfileId": "max-family",
                   "profiles": [ { "id": "max-family", "name": "Family" } ] } ],
+  "homeCountry": "US",
   "shows":    [ { "title": "Severance", "serviceId": "appletv",
                   "watchedWith": ["ana", "ben"],
                   "position": { "season": 2, "episode": 4 },
@@ -137,7 +140,7 @@ app/src/main/java/net/shehane/watching/
   data/Csv.kt                 the readable copy
   data/Tmdb.kt                search, detail, providers, Wikipedia
   data/DriveSync.kt           Google Sign-In and the Drive round trip
-  ui/                         six screens, drawn to match the mockups
+  ui/                         the screens, drawn to match the mockups
 design/                       the .dc.html artboards behind the mockups
 starter-file.example.json     copy to ~/.watching-starter.json to seed your own
 ```
@@ -151,8 +154,8 @@ fall out of step with the others.
 
 | Version | |
 |---|---|
-| **1.0** | Track what you are in the middle of, add fast, demote what you are not in the mood for. United States only. |
-| **2.0** | A wishlist, and a **Tourist TV** screen: set a country while travelling and see which wishlist items are watchable there. |
+| **1.0** | ✅ Track what you are in the middle of, add fast, demote what you are not in the mood for. |
+| **2.0** | ✅ A wishlist, and **Tourist TV**: set a country while travelling and see which wishlist items are watchable there, plus what is popular locally. |
 | **3.0** | Suggestions, built on the history the CSV has been accumulating since 1.0. Also a guided first-run setup, so a new user configures the app on the phone instead of writing a starter file. |
 | *unscheduled* | "Leaving soon" warnings. No free data source exists yet; the space is already reserved on the show screen. |
 

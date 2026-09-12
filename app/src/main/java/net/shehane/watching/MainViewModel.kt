@@ -25,6 +25,7 @@ sealed interface Screen {
     data class ShowDetail(val showId: String) : Screen
     data object Profiles : Screen
     data object About : Screen
+    data object Wishlist : Screen
 }
 
 /** What the add sheet is holding while you decide. */
@@ -73,6 +74,27 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _toast = MutableStateFlow<String?>(null)
     val toast: StateFlow<String?> = _toast.asStateFlow()
+
+    // --- wishlist and travelling ---
+
+    /** The country the wishlist screen is showing. Starts at home. */
+    private val _viewingCountry = MutableStateFlow(library.value.homeCountry)
+    val viewingCountry: StateFlow<String> = _viewingCountry.asStateFlow()
+
+    private val _countries = MutableStateFlow<List<Tmdb.Country>>(emptyList())
+    val countries: StateFlow<List<Tmdb.Country>> = _countries.asStateFlow()
+
+    /** Availability per show id, for whichever country is being viewed. */
+    private val _availability = MutableStateFlow<Map<String, Tmdb.Availability>>(emptyMap())
+    val availability: StateFlow<Map<String, Tmdb.Availability>> = _availability.asStateFlow()
+
+    private val _popularHere = MutableStateFlow<List<Tmdb.SearchItem>>(emptyList())
+    val popularHere: StateFlow<List<Tmdb.SearchItem>> = _popularHere.asStateFlow()
+
+    private val _travelLoading = MutableStateFlow(false)
+    val travelLoading: StateFlow<Boolean> = _travelLoading.asStateFlow()
+
+    private var travelJob: Job? = null
 
     private var searchJob: Job? = null
 
@@ -219,6 +241,76 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         pushSoon()
     }
 
+    // -------------------------------------------------------------- wishlist
+
+    fun wishlist(): List<Show> =
+        library.value.shows.filter { it.isWishlist }.sortedBy { it.title.lowercase() }
+
+    fun toWishlist(showId: String) {
+        store.toWishlist(showId)
+        _toast.value = "Parked on the wishlist."
+        pushSoon()
+    }
+
+    fun startWatching(showId: String) {
+        store.startWatching(showId)
+        _toast.value = "On the couch, from the start."
+        pushSoon()
+    }
+
+    // ------------------------------------------------------------ travelling
+
+    val isAwayFromHome: Boolean
+        get() = _viewingCountry.value != library.value.homeCountry
+
+    fun setHomeCountry(code: String) {
+        store.setHomeCountry(code)
+        _viewingCountry.value = code
+        loadTravel()
+        pushSoon()
+    }
+
+    fun viewCountry(code: String) {
+        if (_viewingCountry.value == code) return
+        _viewingCountry.value = code
+        loadTravel()
+    }
+
+    fun loadCountries() {
+        if (_countries.value.isNotEmpty()) return
+        viewModelScope.launch {
+            runCatching { Tmdb.countries() }.onSuccess { _countries.value = it }
+        }
+    }
+
+    /**
+     * Looks up, for the country being viewed, where each wishlist show can be
+     * watched, plus what is popular there. One call per wishlist item is fine at
+     * this size and it is the only honest way to get it: availability is per
+     * country and changes, so it is never stored.
+     */
+    fun loadTravel() {
+        travelJob?.cancel()
+        val region = _viewingCountry.value
+        val shows = wishlist().filter { it.tmdbId != null }
+        travelJob = viewModelScope.launch {
+            _travelLoading.value = true
+            _availability.value = emptyMap()
+            _popularHere.value = emptyList()
+
+            val found = mutableMapOf<String, Tmdb.Availability>()
+            for (show in shows) {
+                val id = show.tmdbId ?: continue
+                runCatching { Tmdb.availability(id, region) }
+                    .onSuccess { found[show.id] = it; _availability.value = found.toMap() }
+            }
+            runCatching { Tmdb.popularIn(region) }
+                .onSuccess { _popularHere.value = it.take(12) }
+
+            _travelLoading.value = false
+        }
+    }
+
     // ---------------------------------------------------------------- search
 
     /**
@@ -303,7 +395,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** One tap from here to a tracked show. */
-    fun commitAdd() {
+    fun commitAdd(toWishlist: Boolean = false) {
         val d = _draft.value ?: return
         val id = store.addShow(
             title = d.result.name,
@@ -318,11 +410,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             profileId = d.profileId,
             watchedWith = d.watchedWith,
             position = d.position,
+            state = if (toWishlist) Show.STATE_WISHLIST else Show.STATE_ACTIVE,
         )
         _draft.value = null
         clearQuery()
-        _screen.value = Screen.Couch
-        _toast.value = "${d.result.name} is on the couch."
+        _screen.value = if (toWishlist) Screen.Wishlist else Screen.Couch
+        _toast.value =
+            if (toWishlist) "${d.result.name} is on the wishlist."
+            else "${d.result.name} is on the couch."
         pushSoon()
         // Silence the unused warning without losing the id, which the detail screen
         // would want if we ever jump straight there after adding.

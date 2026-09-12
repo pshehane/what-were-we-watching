@@ -318,6 +318,33 @@ class LibraryLogicTest {
         assertFalse(csv.contains("null"))
     }
 
+    // ------------------------------------- settings that live on the library
+
+    @Test
+    fun `a merge keeps the settings instead of resetting them to the defaults`() {
+        val mine = Library(
+            updatedAt = T2,
+            people = people,
+            homeCountry = "GB",
+            summaryMode = Library.SUMMARY_CLOUD,
+        )
+        val theirs = Library(updatedAt = T1, people = people)
+
+        val merged = Merge.libraries(mine, theirs)
+
+        assertEquals("GB", merged.homeCountry)
+        assertEquals(Library.SUMMARY_CLOUD, merged.summaryMode)
+    }
+
+    @Test
+    fun `the newer copy's settings win, whichever side it is on`() {
+        val older = Library(updatedAt = T1, people = people, homeCountry = "GB")
+        val newer = Library(updatedAt = T2, people = people, homeCountry = "FR")
+
+        assertEquals("FR", Merge.libraries(older, newer).homeCountry)
+        assertEquals("FR", Merge.libraries(newer, older).homeCountry)
+    }
+
     companion object {
         private const val T1 = "2026-01-01T10:00:00Z"
         private const val T2 = "2026-02-01T10:00:00Z"

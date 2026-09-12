@@ -14,7 +14,9 @@ junit = "4.13.2"
 playServicesAuth = "21.2.0"
 googleApiClient = "2.6.0"
 googleApiDrive = "v3-rev20240521-2.0.0"
-# On-device summarising, through AICore. Beta is the newest there is.
+# On-device generation, through AICore. Beta is the newest there is, and the two
+# artifacts version separately.
+mlkitGenaiPrompt = "1.0.0-beta4"
 mlkitGenai = "1.0.0-beta1"
 
 [libraries]
@@ -40,6 +42,7 @@ junit = { module = "junit:junit", version.ref = "junit" }
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 google-api-client-android = { module = "com.google.api-client:google-api-client-android", version.ref = "googleApiClient" }
 google-api-services-drive = { module = "com.google.apis:google-api-services-drive", version.ref = "googleApiDrive" }
+mlkit-genai-prompt = { module = "com.google.mlkit:genai-prompt", version.ref = "mlkitGenaiPrompt" }
 mlkit-genai-summarization = { module = "com.google.mlkit:genai-summarization", version.ref = "mlkitGenai" }
 
 [plugins]

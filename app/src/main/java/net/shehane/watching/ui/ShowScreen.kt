@@ -97,7 +97,9 @@ fun ShowScreen(
     // here rather than in the view model, so the handler does too.
     BackHandler(enabled = sharing) { sharing = false }
     BackHandler(enabled = pickingSeason) { pickingSeason = false }
-    BackHandler(enabled = asking != null) { asking = null }
+    // Clears the recap too. Without that, backing out and reopening shows the
+    // answer from last time, which is wrong the moment the setting changes.
+    BackHandler(enabled = asking != null) { asking = null; onCloseRecap() }
     BackHandler(enabled = confirmDelete) { confirmDelete = false }
 
     Box(Modifier.fillMaxSize().background(Ink.Ground)) {
@@ -698,6 +700,7 @@ private fun Summarised(recapped: MainViewModel.Recapped?) {
         recapped.source == Summary.Source.CLOUD -> "Written by Gemini"
         recapped.source == Summary.Source.DEVICE ->
             recapped.modelName?.let { "Written on this phone by $it" } ?: "Written on this phone"
+
         else -> null
     }
 
@@ -733,6 +736,17 @@ private fun Summarised(recapped: MainViewModel.Recapped?) {
                 }
                 VGap(6.dp)
             }
+        }
+
+        if (recapped.source == Summary.Source.DEVICE && recapped.text != null &&
+            !recapped.followedTheBrief
+        ) {
+            BasicText(
+                "This phone can only bullet, not follow an instruction, so the points " +
+                    "are its own choice rather than one per character.",
+                style = Type.Meta,
+            )
+            VGap(10.dp)
         }
 
         if (why != null) {

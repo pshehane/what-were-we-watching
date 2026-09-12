@@ -323,6 +323,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val fallback: Summary.Fallback? = null,
         val modelName: String? = null,
         val working: Boolean = false,
+        /** True when the phone took the instruction rather than only bulleting. */
+        val followedTheBrief: Boolean = false,
     )
 
     private val _recapped = MutableStateFlow<Recapped?>(null)
@@ -331,7 +333,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var recapJob: Job? = null
 
     /** Null until asked once, because the check itself costs a round trip to AICore. */
-    private var deviceModelReady: Boolean? = null
+    private var deviceCapability: OnDevice.Capability? = null
 
     val cloudAvailable: Boolean get() = Gemini.isConfigured
 
@@ -370,48 +372,57 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         recapJob = viewModelScope.launch {
             _recapped.value = Recapped(working = true)
 
-            if (deviceModelReady == null) {
-                deviceModelReady = OnDevice.isAvailable(getApplication())
+            if (deviceCapability == null) {
+                deviceCapability = OnDevice.capability(getApplication())
             }
             val (source, why) = Summary.resolve(
                 mode = mode,
                 hasCloudKey = Gemini.isConfigured,
                 hasNetwork = online(),
-                hasDeviceModel = deviceModelReady == true,
+                hasDeviceModel = deviceCapability?.any == true,
             )
 
             val body = Summary.sourceText(recap)
-            when (source) {
-                Summary.Source.CLOUD -> {
-                    val cast = runCatching {
-                        show.tmdbId?.let { Tmdb.mainCast(it, show.episodeCount) } ?: emptyList()
-                    }.getOrDefault(emptyList())
 
-                    runCatching {
-                        Gemini.summarise(
-                            Summary.prompt(
-                                show = show,
-                                upTo = upTo,
-                                characters = cast.mapNotNull { it.character },
-                                body = body,
-                            )
-                        )
-                    }
-                        .onSuccess { _recapped.value = Recapped(it, Summary.Source.CLOUD, why) }
+            // The cast is worth a call for either model now: the on-device prompt
+            // API takes the same instruction the cloud one does.
+            val characters = runCatching {
+                show.tmdbId?.let { Tmdb.mainCast(it, show.episodeCount) }?.mapNotNull { it.character }
+                    ?: emptyList()
+            }.getOrDefault(emptyList())
+
+            val instruction = Summary.prompt(show, upTo, characters, body)
+            android.util.Log.i(
+                "Watching.Summary",
+                "prompt ${instruction.length} chars, ${characters.size} characters named",
+            )
+
+            when (source) {
+                Summary.Source.CLOUD ->
+                    runCatching { Gemini.summarise(instruction) }
+                        .onSuccess {
+                            _recapped.value =
+                                Recapped(it, Summary.Source.CLOUD, why, followedTheBrief = true)
+                        }
                         .onFailure {
                             android.util.Log.w("Watching.Summary", "cloud summarise failed", it)
-                            runOnDevice(body, recap, why = Summary.Fallback.FAILED)
+                            runOnDevice(instruction, body, characters.size, Summary.Fallback.FAILED)
                         }
-                }
 
-                Summary.Source.DEVICE -> runOnDevice(body, recap, why)
+                Summary.Source.DEVICE -> runOnDevice(instruction, body, characters.size, why)
                 Summary.Source.RAW -> _recapped.value = Recapped(null, Summary.Source.RAW, why)
             }
         }
     }
 
-    private suspend fun runOnDevice(body: String, recap: Recap.CatchUp, why: Summary.Fallback?) {
-        if (deviceModelReady != true) {
+    private suspend fun runOnDevice(
+        instruction: String,
+        body: String,
+        characters: Int,
+        why: Summary.Fallback?,
+    ) {
+        val capability = deviceCapability
+        if (capability?.any != true) {
             _recapped.value = Recapped(
                 null,
                 Summary.Source.RAW,
@@ -419,13 +430,27 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             )
             return
         }
-        val bullets = Summary.deviceBulletCount(recap.recent.size.coerceAtMost(3))
-        runCatching { OnDevice.summarise(getApplication(), body, bullets) }
+
+        runCatching {
+            OnDevice.generate(
+                context = getApplication(),
+                instruction = instruction,
+                body = body,
+                bullets = Summary.deviceBulletCount(characters),
+                capability = capability,
+            )
+        }
             .onSuccess {
-                _recapped.value = Recapped(it.text, Summary.Source.DEVICE, why, it.modelName)
+                _recapped.value = Recapped(
+                    text = it.text,
+                    source = Summary.Source.DEVICE,
+                    fallback = why,
+                    modelName = it.modelName,
+                    followedTheBrief = it.kind == OnDevice.Kind.PROMPT,
+                )
             }
             .onFailure {
-                android.util.Log.w("Watching.Summary", "on-device summarise failed", it)
+                android.util.Log.w("Watching.Summary", "on-device generate failed", it)
                 _recapped.value = Recapped(null, Summary.Source.RAW, Summary.Fallback.FAILED)
             }
     }

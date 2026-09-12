@@ -48,7 +48,11 @@ object Gemini {
             putJsonObject("generationConfig") {
                 // Low, not zero: a recap should read like prose, not like a form.
                 put("temperature", 0.4)
-                put("maxOutputTokens", 900)
+                put("maxOutputTokens", 2000)
+                // 2.5 Flash thinks by default, and thinking is charged against the
+                // same output budget. It was spending nearly all of it and leaving
+                // one bullet out of nine. Rearranging synopses needs no reasoning.
+                putJsonObject("thinkingConfig") { put("thinkingBudget", 0) }
             }
         }
 

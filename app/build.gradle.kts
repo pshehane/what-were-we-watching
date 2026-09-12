@@ -162,8 +162,10 @@ dependencies {
     implementation(libs.google.api.client.android)
     implementation(libs.google.api.services.drive)
 
-    // On-device summarising. Only some phones have AICore, so every call site
-    // has to cope with it simply not being there.
+    // On-device generation, through AICore. Two APIs because they are provisioned
+    // separately: a phone can have one feature and not the other, and the prompt
+    // one is worth far more because it takes an instruction.
+    implementation(libs.mlkit.genai.prompt)
     implementation(libs.mlkit.genai.summarization)
 
     testImplementation(libs.junit)

@@ -204,9 +204,10 @@ fun ProfilesScreen(
                 VGap(8.dp)
                 SummaryChoice(
                     title = "This phone",
-                    detail = "AICore, free and offline. It writes up to three bullet " +
-                        "points and cannot be told what to put in them, so the shape is " +
-                        "its choice rather than ours. Not every phone has it.",
+                    detail = "AICore, free and offline, and nothing leaves the phone. " +
+                        "Where the phone allows it, this is asked for the same thing as " +
+                        "the cloud one. Where it only allows bullets, the recap says so. " +
+                        "Not every phone has either.",
                     chosen = library.summaryMode == Library.SUMMARY_DEVICE,
                     enabled = true,
                     onPick = { onSetSummaryMode(Library.SUMMARY_DEVICE) },

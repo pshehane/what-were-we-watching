@@ -6,71 +6,138 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.mlkit.genai.common.DownloadCallback
 import com.google.mlkit.genai.common.FeatureStatus
 import com.google.mlkit.genai.common.GenAiException
+import com.google.mlkit.genai.prompt.Generation
 import com.google.mlkit.genai.summarization.Summarization
 import com.google.mlkit.genai.summarization.SummarizationRequest
 import com.google.mlkit.genai.summarization.SummarizerOptions
 import java.util.concurrent.Executor
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
- * Summarising on the phone, through AICore.
+ * Generating on the phone, through AICore. Nothing here leaves the device, and
+ * none of it costs anything.
  *
- * This is ML Kit's Summarization API, which runs on the system's own model. It
- * costs nothing, needs no network and sends nothing anywhere. What it will not do
- * is take an instruction: the only controls are how many bullets to emit and what
- * text to hand it, so the shape of the answer is the model's decision, not ours.
+ * Two APIs, because AICore provisions its features separately and a phone can
+ * easily have one and not the other:
  *
- * Plenty of phones have no AICore at all. Everything here answers "no" quietly in
- * that case rather than throwing, because "no" is an ordinary outcome.
+ *  - the prompt API takes an instruction, so it can be asked for one point on the
+ *    story and one per character, the same thing the cloud model is asked for;
+ *  - the summarisation API takes no instruction at all. One, two or three bullets
+ *    of whatever it decides, and that is the whole interface.
+ *
+ * The prompt one is tried first for that reason, and the caller is told which
+ * answered so the screen never implies the formula was honoured when it was not.
+ *
+ * All of this is the public ML Kit surface. Nothing here needs a rooted phone,
+ * a hidden API or a system permission, which matters because most people running
+ * this will have none of those.
  */
 object OnDevice {
 
     private const val TAG = "Watching.OnDevice"
 
-    data class Answer(val text: String, val modelName: String?)
+    enum class Kind {
+        /** Took the instruction. The recap is shaped the way it was asked for. */
+        PROMPT,
+
+        /** Bullets only. The phone chose what went in them. */
+        SUMMARY,
+    }
+
+    data class Answer(val text: String, val kind: Kind, val modelName: String?)
+
+    /** Which APIs this phone actually exposes. Both can be false, and often are. */
+    data class Capability(val prompt: Boolean, val summary: Boolean) {
+        val any: Boolean get() = prompt || summary
+    }
 
     /** Runs the callbacks straight through; the work is already off the main thread. */
     private val direct = Executor { it.run() }
 
-    /**
-     * Whether this phone can do it at all.
-     *
-     * DOWNLOADABLE counts as yes. The model is fetched on first use, which is slow
-     * once and then not again, and offering it is better than pretending the phone
-     * cannot do something it can.
-     */
-    suspend fun isAvailable(context: Context): Boolean = runCatching {
-        val summarizer = Summarization.getClient(options(context, bullets = 3))
-        try {
-            val status = summarizer.checkFeatureStatus().await()
-            // Logged because this is the one answer that decides the whole feature
-            // and it varies by phone, region and system update. Without it, "no
-            // on-device model" is unexplainable from outside.
-            Log.i(TAG, "feature status = " + nameOf(status))
-            when (status) {
-                FeatureStatus.AVAILABLE, FeatureStatus.DOWNLOADABLE, FeatureStatus.DOWNLOADING -> true
-                else -> false
-            }
-        } finally {
-            summarizer.close()
-        }
-    }.onFailure { Log.w(TAG, "availability check failed", it) }.getOrDefault(false)
-
-    private fun nameOf(status: Int): String = when (status) {
-        FeatureStatus.AVAILABLE -> "AVAILABLE"
-        FeatureStatus.DOWNLOADABLE -> "DOWNLOADABLE"
-        FeatureStatus.DOWNLOADING -> "DOWNLOADING"
-        FeatureStatus.UNAVAILABLE -> "UNAVAILABLE"
-        else -> "unknown($status)"
+    suspend fun capability(context: Context): Capability {
+        val cap = Capability(prompt = promptReady(), summary = summaryReady(context))
+        Log.i(TAG, "prompt=${cap.prompt} summary=${cap.summary}")
+        return cap
     }
 
     /**
-     * [bullets] must be 1, 2 or 3. The API has no other settings, so the count is
-     * the only part of the caller's intent that survives.
+     * Asks for the recap in the shape the caller wants, and settles for bullets
+     * when that is all the phone offers.
+     *
+     * [body] is the synopses; [instruction] is the whole prompt with the synopses
+     * already inside it. The summarisation path can only use the first.
      */
-    suspend fun summarise(context: Context, text: String, bullets: Int): Answer {
+    suspend fun generate(
+        context: Context,
+        instruction: String,
+        body: String,
+        bullets: Int,
+        capability: Capability,
+    ): Answer {
+        if (capability.prompt) {
+            runCatching { viaPrompt(instruction) }
+                .onSuccess { return it }
+                .onFailure { Log.w(TAG, "prompt API failed, trying summarisation", it) }
+        }
+        if (capability.summary) return viaSummary(context, body, bullets)
+        throw IllegalStateException("No on-device generation on this phone")
+    }
+
+    // ------------------------------------------------------------ prompt API
+
+    private suspend fun promptReady(): Boolean = runCatching {
+        val model = Generation.getClient()
+        try {
+            val status = model.checkStatus()
+            Log.i(TAG, "prompt status = ${nameOf(status)}")
+            status == FeatureStatus.AVAILABLE || status == FeatureStatus.DOWNLOADABLE ||
+                status == FeatureStatus.DOWNLOADING
+        } finally {
+            model.close()
+        }
+    }.onFailure { Log.w(TAG, "prompt availability failed", it) }.getOrDefault(false)
+
+    private suspend fun viaPrompt(instruction: String): Answer {
+        val model = Generation.getClient()
+        try {
+            if (model.checkStatus() == FeatureStatus.DOWNLOADABLE) {
+                // A Flow that completes when the download does. Progress is not
+                // reported to the screen: the one line it already shows says more
+                // to a reader than a percentage would.
+                model.download().collect {}
+            }
+            model.warmup()
+
+            Log.i(TAG, "prompting with ${instruction.length} chars")
+            val text = model.generateContent(instruction)
+                .candidates.firstOrNull()?.text?.trim()
+                ?: throw IllegalStateException("Prompt API returned no candidates")
+
+            val name = runCatching { model.getBaseModelName() }.getOrNull()
+            return Answer(text, Kind.PROMPT, name?.takeIf { it.isNotBlank() })
+        } finally {
+            model.close()
+        }
+    }
+
+    // ----------------------------------------------------- summarisation API
+
+    private suspend fun summaryReady(context: Context): Boolean = runCatching {
+        val summarizer = Summarization.getClient(options(context, bullets = 3))
+        try {
+            val status = summarizer.checkFeatureStatus().await()
+            Log.i(TAG, "summarisation status = ${nameOf(status)}")
+            status == FeatureStatus.AVAILABLE || status == FeatureStatus.DOWNLOADABLE ||
+                status == FeatureStatus.DOWNLOADING
+        } finally {
+            summarizer.close()
+        }
+    }.onFailure { Log.w(TAG, "summarisation availability failed", it) }.getOrDefault(false)
+
+    private suspend fun viaSummary(context: Context, text: String, bullets: Int): Answer {
         val summarizer = Summarization.getClient(options(context, bullets))
         try {
             if (summarizer.checkFeatureStatus().await() == FeatureStatus.DOWNLOADABLE) {
@@ -78,10 +145,10 @@ object OnDevice {
             }
             summarizer.prepareInferenceEngine().await()
 
-            Log.i(TAG, "summarising " + text.length + " chars into " + bullets + " bullets")
+            Log.i(TAG, "summarising ${text.length} chars into $bullets bullets")
             val result = summarizer.runInference(SummarizationRequest.builder(text).build()).await()
             val name = runCatching { summarizer.getBaseModelName().await() }.getOrNull()
-            return Answer(result.summary.trim(), name?.takeIf { it.isNotBlank() })
+            return Answer(result.summary.trim(), Kind.SUMMARY, name?.takeIf { it.isNotBlank() })
         } finally {
             summarizer.close()
         }
@@ -103,11 +170,6 @@ object OnDevice {
             .setLongInputAutoTruncationEnabled(true)
             .build()
 
-    /**
-     * The download reports progress nobody is watching. The screen already says it
-     * is working, and a first run that takes a while is better explained by that
-     * one line than by a percentage that means nothing to the reader.
-     */
     private val silentDownload = object : DownloadCallback {
         override fun onDownloadStarted(bytesToDownload: Long) = Unit
         override fun onDownloadProgress(totalBytesDownloaded: Long) = Unit
@@ -115,7 +177,17 @@ object OnDevice {
         override fun onDownloadFailed(e: GenAiException) = Unit
     }
 
-    /** ML Kit hands back Guava futures; this is the only bridge the app needs. */
+    // ------------------------------------------------------------------ plumbing
+
+    private fun nameOf(status: Int): String = when (status) {
+        FeatureStatus.AVAILABLE -> "AVAILABLE"
+        FeatureStatus.DOWNLOADABLE -> "DOWNLOADABLE"
+        FeatureStatus.DOWNLOADING -> "DOWNLOADING"
+        FeatureStatus.UNAVAILABLE -> "UNAVAILABLE"
+        else -> "unknown($status)"
+    }
+
+    /** The summarisation API hands back Guava futures. The prompt one does not. */
     private suspend fun <T> ListenableFuture<T>.await(): T =
         suspendCancellableCoroutine { cont ->
             addListener(

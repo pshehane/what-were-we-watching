@@ -38,11 +38,20 @@ object Merge {
         val shows = mergeBy(a.shows, b.shows, { it.id }, { it.updatedAt })
             .filterNot { buried(it.id, it.updatedAt) }
 
+        // The settings that live on the library itself rather than on a record.
+        // They have no updatedAt of their own, so the newer library wins outright.
+        // Leaving them out of this constructor silently reset them to the defaults
+        // on every sync, which is how a setting could be changed and then undo
+        // itself a few seconds later.
+        val newer = if (Clock.newer(a.updatedAt, b.updatedAt)) a else b
+
         return Library(
             schemaVersion = maxOf(a.schemaVersion, b.schemaVersion),
-            updatedAt = if (Clock.newer(a.updatedAt, b.updatedAt)) a.updatedAt else b.updatedAt,
+            updatedAt = newer.updatedAt,
             people = people.sortedBy { it.order },
             services = services.sortedBy { it.name.lowercase() },
+            homeCountry = newer.homeCountry,
+            summaryMode = newer.summaryMode,
             shows = shows,
             deleted = tombstones,
         )

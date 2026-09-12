@@ -102,7 +102,10 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix = ".debug"
+            // No applicationIdSuffix on purpose. A suffix would let debug and
+            // release sit on the phone side by side, but it also means a second
+            // package name, and Google ties an Android OAuth client to exactly
+            // one package name. One app, one package, one client to create.
             versionNameSuffix = "-debug"
         }
         release {

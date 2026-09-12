@@ -73,7 +73,7 @@ The app works fully offline without this. Connecting Drive puts `library.json` a
 There is **no client id or secret to configure**. Google matches the OAuth client by package name plus signing certificate at runtime. In the [Google Cloud console](https://console.cloud.google.com/):
 
 1. Create a project (or reuse one) and enable the **Google Drive API**.
-2. Create an **OAuth client → Android** for `net.shehane.watching`, and a second for `net.shehane.watching.debug` if you install debug builds.
+2. Create an **OAuth client → Android** for `net.shehane.watching`. Debug and release share this package name, so one client covers both.
 3. Give both the SHA-1 of your signing certificate:
    ```
    keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android

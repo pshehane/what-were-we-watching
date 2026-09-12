@@ -3,8 +3,8 @@
 #   .\deploy.ps1            build, install, launch
 #   .\deploy.ps1 -Log       ...then stream this app's logcat
 #
-# Debug build on purpose: the app id carries a .debug suffix, so it can sit
-# beside a release install without clobbering its data.
+# Debug build on purpose. Debug and release share one package name so that only
+# one Google OAuth client is ever needed.
 
 param(
     [switch]$Log,
@@ -16,7 +16,7 @@ Set-Location $PSScriptRoot
 
 $adb      = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
 $apk      = "$PSScriptRoot\app\build\outputs\apk\debug\app-debug.apk"
-$package  = "net.shehane.watching.debug"
+$package  = "net.shehane.watching"
 $activity = "net.shehane.watching/net.shehane.watching.MainActivity"
 
 # Android Studio's bundled JDK is the one this project is known to build with.

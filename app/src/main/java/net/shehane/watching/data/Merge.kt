@@ -38,6 +38,12 @@ object Merge {
         val shows = mergeBy(a.shows, b.shows, { it.id }, { it.updatedAt })
             .filterNot { buried(it.id, it.updatedAt) }
 
+        // One saved recap per show, newest wins. A recap for a show that is no
+        // longer in the library is dropped with it.
+        val showIds = shows.mapTo(HashSet()) { it.id }
+        val recaps = mergeBy(a.recaps, b.recaps, { it.showId }, { it.updatedAt })
+            .filter { it.showId in showIds }
+
         // The settings that live on the library itself rather than on a record.
         // They have no updatedAt of their own, so the newer library wins outright.
         // Leaving them out of this constructor silently reset them to the defaults
@@ -53,6 +59,7 @@ object Merge {
             homeCountry = newer.homeCountry,
             summaryMode = newer.summaryMode,
             shows = shows,
+            recaps = recaps,
             deleted = tombstones,
         )
     }

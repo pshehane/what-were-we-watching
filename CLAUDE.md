@@ -15,6 +15,7 @@ This repository is **public**. Read this before changing anything.
 .\deploy.ps1                          # build, install keeping the library, launch
 .\deploy.ps1 -Serial <serial> -Log    # pick a device, stream logcat
 .\gradlew.bat :app:testDebugUnitTest  # unit tests
+.\gradlew.bat :aicore-check:assembleDebug  # the standalone AICore test app (tools/aicore-check)
 ```
 
 Gradle needs `JAVA_HOME` set to Android Studio's JBR: `C:/Program Files/Android/Android Studio/jbr`.

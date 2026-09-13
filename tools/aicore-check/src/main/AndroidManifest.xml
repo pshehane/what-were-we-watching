@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Only so the report can include these two packages' version numbers. -->
+    <queries>
+        <package android:name="com.google.android.aicore" />
+        <package android:name="com.google.android.as.oss" />
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:label="AICore check"
+        android:theme="@android:style/Theme.DeviceDefault">
+        <activity
+            android:name=".CheckActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

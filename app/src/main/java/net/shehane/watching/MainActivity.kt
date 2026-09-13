@@ -227,6 +227,7 @@ private fun App() {
                         onNeedSeasons = { vm.loadSeasons(show, it) },
                         recapped = recapped,
                         onNeedRecap = { recap, upTo -> vm.summarise(show, recap, upTo) },
+                        onRewriteRecap = { recap, upTo -> vm.summarise(show, recap, upTo, fresh = true) },
                         onCloseRecap = vm::clearRecap,
                         onDelete = { vm.deleteShow(show.id) },
                         insets = insets,

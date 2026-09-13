@@ -81,6 +81,7 @@ fun ShowScreen(
     onNeedSeasons: (List<Int>) -> Unit,
     recapped: MainViewModel.Recapped?,
     onNeedRecap: (Recap.CatchUp, String) -> Unit,
+    onRewriteRecap: (Recap.CatchUp, String) -> Unit,
     onCloseRecap: () -> Unit,
     onDelete: () -> Unit,
     insets: PaddingValues,
@@ -721,7 +722,9 @@ fun ShowScreen(
                         onDismiss = { asking = null; onCloseRecap() },
                         bottomInset = insets,
                     ) {
-                        CatchUpBody(recap, seasonsLoading, label, recapped)
+                        CatchUpBody(recap, seasonsLoading, label, recapped) {
+                            onRewriteRecap(recap, label)
+                        }
                     }
                 }
             }
@@ -736,7 +739,7 @@ fun ShowScreen(
  * from should always be one scroll away.
  */
 @Composable
-private fun Summarised(recapped: MainViewModel.Recapped?) {
+private fun Summarised(recapped: MainViewModel.Recapped?, onRewrite: () -> Unit) {
     if (recapped == null) return
 
     val label = when {
@@ -799,6 +802,24 @@ private fun Summarised(recapped: MainViewModel.Recapped?) {
         if (why != null) {
             BasicText(why, style = Type.Meta)
             VGap(10.dp)
+        }
+
+        if (recapped.savedAt != null && recapped.text != null) {
+            BasicText(
+                "Saved from an earlier request " +
+                    net.shehane.watching.data.Clock.ago(recapped.savedAt) +
+                    ", so nothing was sent this time.",
+                style = Type.Meta,
+            )
+            BasicText(
+                "Write it again",
+                style = Type.Meta.copy(color = Ink.Amber),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable(onClick = onRewrite)
+                    .padding(vertical = 8.dp),
+            )
+            VGap(6.dp)
         }
 
         if (recapped.text != null || recapped.working) {
@@ -911,6 +932,7 @@ private fun CatchUpBody(
     loading: Boolean,
     position: String,
     recapped: MainViewModel.Recapped?,
+    onRewrite: () -> Unit,
 ) {
     if (recap.isEmpty) {
         EmptyNote(if (loading) "Reading back through the seasons…" else "Nothing behind you yet.")
@@ -918,7 +940,7 @@ private fun CatchUpBody(
     }
 
     Column {
-        Summarised(recapped)
+        Summarised(recapped, onRewrite)
         for (entry in recap.recent) {
             BasicText("S${entry.season} E${entry.episode} · ${entry.title}", style = Type.ShowTitleSm)
             VGap(5.dp)

@@ -351,6 +351,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val working: Boolean = false,
         /** True when the phone took the instruction rather than only bulleting. */
         val followedTheBrief: Boolean = false,
+        /** When the recap was first written, if it came from the library instead of a model. */
+        val savedAt: String? = null,
     )
 
     private val _recapped = MutableStateFlow<Recapped?>(null)
@@ -389,10 +391,33 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      * on screen: it moves to the next thing and the sheet says which one answered
      * and why it was not the one you picked.
      */
-    fun summarise(show: Show, recap: Recap.CatchUp, upTo: String) {
-        if (_recapped.value != null) return
+    fun summarise(show: Show, recap: Recap.CatchUp, upTo: String, fresh: Boolean = false) {
+        if (_recapped.value != null && !fresh) return
         val mode = library.value.summaryMode
         if (mode == Library.SUMMARY_NONE || recap.isEmpty) return
+
+        // A recap already written for this stopping point costs nothing to show.
+        // "Write it again" passes fresh to skip this.
+        if (!fresh) {
+            val saved = Summary.reusable(
+                library.value.recaps.firstOrNull { it.showId == show.id }, mode, upTo,
+            )
+            if (saved != null) {
+                recapJob?.cancel()
+                _recapped.value = Recapped(
+                    text = saved.text,
+                    source = if (saved.source == Library.SUMMARY_CLOUD) {
+                        Summary.Source.CLOUD
+                    } else {
+                        Summary.Source.DEVICE
+                    },
+                    modelName = saved.modelName,
+                    followedTheBrief = saved.followedTheBrief,
+                    savedAt = saved.updatedAt,
+                )
+                return
+            }
+        }
 
         recapJob?.cancel()
         recapJob = viewModelScope.launch {
@@ -441,19 +466,44 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         .onSuccess {
                             _recapped.value =
                                 Recapped(it, Summary.Source.CLOUD, why, followedTheBrief = true)
+                            keep(show, upTo, it, Library.SUMMARY_CLOUD, null, true)
                         }
                         .onFailure {
                             android.util.Log.w("Watching.Summary", "cloud summarise failed", it)
-                            runOnDevice(instructionFor, body, characters.size, Summary.Fallback.FAILED)
+                            runOnDevice(show, upTo, instructionFor, body, characters.size, Summary.Fallback.FAILED)
                         }
 
-                Summary.Source.DEVICE -> runOnDevice(instructionFor, body, characters.size, why)
+                Summary.Source.DEVICE -> runOnDevice(show, upTo, instructionFor, body, characters.size, why)
                 Summary.Source.RAW -> _recapped.value = Recapped(null, Summary.Source.RAW, why)
             }
         }
     }
 
+    /** Saves a written recap. The next Drive push copies it to the other phones. */
+    private fun keep(
+        show: Show,
+        upTo: String,
+        text: String,
+        source: String,
+        modelName: String?,
+        followedTheBrief: Boolean,
+    ) {
+        store.saveRecap(
+            net.shehane.watching.model.SavedRecap(
+                showId = show.id,
+                upTo = upTo,
+                text = text,
+                source = source,
+                modelName = modelName,
+                followedTheBrief = followedTheBrief,
+            )
+        )
+        pushSoon()
+    }
+
     private suspend fun runOnDevice(
+        show: Show,
+        upTo: String,
         instruction: (Int) -> String,
         body: String,
         characters: Int,
@@ -490,6 +540,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     modelName = it.modelName,
                     followedTheBrief = it.kind == OnDevice.Kind.PROMPT,
                 )
+                keep(show, upTo, it.text, Library.SUMMARY_DEVICE, it.modelName, it.kind == OnDevice.Kind.PROMPT)
             }
             .onFailure {
                 android.util.Log.w("Watching.Summary", "on-device generate failed", it)

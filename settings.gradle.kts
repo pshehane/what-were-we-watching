@@ -33,3 +33,8 @@ plugins {
 
 rootProject.name = "WhatWereWeWatching"
 include(":app")
+
+// A separate one-screen app that checks whether AICore answers on a phone. It
+// has its own package name so it can be installed next to the real app.
+include(":aicore-check")
+project(":aicore-check").projectDir = file("tools/aicore-check")

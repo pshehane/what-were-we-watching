@@ -4,7 +4,7 @@ An Android app for one household. It answers one question quickly: **who is on t
 
 Tap the people who are sitting down. The list re-sorts into shows everyone seated is part-way through, then shows only some of them are on. Every card says which streaming service to open and which profile to pick.
 
-> **Status:** versions 1.0 and 2.0 are complete. Suggestions (3.0) are built; the guided first-run setup is not. The app runs on several Android phones, and 133 unit tests pass.
+> **Status:** versions 1.0 and 2.0 are complete. Suggestions (3.0) are built; the guided first-run setup is not. The app runs on several Android phones, and 141 unit tests pass.
 
 ---
 
@@ -131,7 +131,7 @@ Plain Gradle also works:
 .\gradlew.bat :app:testDebugUnitTest
 ```
 
-133 tests in 10 files. They cover the couch match rule, the two-phone merge, the CSV, starter-file seeding, suggestions, the recap cut-off, recap fallback order, the share message, positions, the time budget, filling in missing details, and reading Gemini responses. All of it is pure logic, so no device is needed.
+141 tests in 11 files. They cover the couch match rule, the two-phone merge, the CSV, starter-file seeding, suggestions, the recap cut-off, recap fallback order, saved recaps, the share message, positions, the time budget, filling in missing details, and reading Gemini responses. All of it is pure logic, so no device is needed.
 
 ## Recaps
 
@@ -143,7 +143,11 @@ Plain Gradle also works:
 
 Every choice only ever sees text from episodes before your position. The recap cannot include anything from the next episode onward.
 
+**Recaps are saved.** A written recap is stored in the library, one per show, and syncs through Drive with everything else. Asking again for the same stopping point, on the same phone or another one, shows the saved recap and sends nothing. A cloud recap is reused whichever writer is chosen. A recap written on the phone is only reused while *This phone* is chosen. *Write it again* under a saved recap asks the model again and replaces it.
+
 **On-device support varies by phone and by AICore version.** In testing on three phones in September 2026, none produced an on-device recap. One phone was not a supported device. One did not offer the feature to third-party apps. One reported the feature as available and then failed when generating. The app handles each of these and shows the synopses instead.
+
+To check a phone without this app, build `tools/aicore-check`. It is a one-screen app that makes the smallest possible ML Kit GenAI calls and copies a report with the error codes. See [its README](tools/aicore-check/README.md).
 
 ## How your data is stored
 
@@ -161,12 +165,15 @@ One JSON file is the record. Every entry has its own `updatedAt`, so two phones 
                   "watchedWith": ["ana", "ben"],
                   "position": { "season": 2, "episode": 4 },
                   "seasonCount": 2, "episodeCount": 19, "runtimeMinutes": 52,
-                  "state": "finished", "liked": true } ]
+                  "state": "finished", "liked": true } ],
+  "recaps":   [ { "showId": "…", "upTo": "S2 E5", "source": "cloud",
+                  "text": "- The story so far…" } ]
 }
 ```
 
 - `position` is the last episode watched. Episode `0` means none of that season yet.
 - `liked` is `true`, `false`, or absent. Absent means nobody has said.
+- `recaps` holds at most one saved recap per show. `upTo` is the episode it stops before. The newer copy wins in a merge, and a recap is removed with its show.
 - `homeCountry` and `summaryMode` are taken from whichever copy was changed most recently.
 
 The CSV is rewritten from the JSON on every change, one row per show, with plain `YYYY-MM-DD` dates. It is never read back.
@@ -196,6 +203,7 @@ app/src/main/java/net/shehane/watching/
   data/DriveSync.kt           Google Sign-In and the Drive round trip
   data/Starter.kt             first-run household seeding
   ui/                         the screens, drawn to match the mockups
+tools/aicore-check/            standalone app that tests AICore on a phone
 design/                       the .dc.html artboards behind the mockups
 starter-file.example.json     copy to ~/.watching-starter.json to seed your own
 ```
@@ -221,7 +229,7 @@ The app connects to:
 - **Your own Google Drive**, if you connect it.
 - **Gemini**, only if the build has a Gemini key and you choose the cloud recap. It sends the show title, main character names, and synopses of episodes you have already watched. It sends nothing about your household.
 
-On-device recaps stay on the phone. There is no server, no account, and no telemetry.
+On-device recaps are written on the phone. Saved recaps, from either writer, are stored in the library file, so they are in your Drive copy if you connect Drive. There is no server, no account, and no telemetry.
 
 ## Attribution
 

@@ -308,6 +308,14 @@ class LibraryStore(private val context: Context) {
     /** Which summariser "Catch me up" should prefer. */
     fun setSummaryMode(mode: String) = update { it.copy(summaryMode = mode) }
 
+    /** Replaces whatever recap was saved for the same show. */
+    fun saveRecap(recap: net.shehane.watching.model.SavedRecap) = update { lib ->
+        lib.copy(
+            recaps = lib.recaps.filterNot { it.showId == recap.showId } +
+                recap.copy(updatedAt = Clock.now()),
+        )
+    }
+
     /** Where you normally are. Streaming rights are sold by country. */
     fun setHomeCountry(code: String) = update { lib ->
         lib.copy(homeCountry = code.uppercase())
@@ -316,6 +324,7 @@ class LibraryStore(private val context: Context) {
     fun deleteShow(id: String) = update { lib ->
         lib.copy(
             shows = lib.shows.filterNot { it.id == id },
+            recaps = lib.recaps.filterNot { it.showId == id },
             deleted = lib.deleted + Tombstone(id, "show", Clock.now()),
         )
     }

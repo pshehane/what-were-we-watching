@@ -1,6 +1,7 @@
 package net.shehane.watching.data
 
 import net.shehane.watching.model.Library
+import net.shehane.watching.model.SavedRecap
 import net.shehane.watching.model.Show
 
 /**
@@ -67,6 +68,23 @@ object Summary {
         }
 
         else -> onDeviceOr(hasDeviceModel, null)
+    }
+
+    /**
+     * A saved recap that can be shown instead of asking a model, or null.
+     *
+     * It has to stop before the same episode. A cloud recap is used whichever
+     * writer is chosen, because it is already paid for and it is the better of
+     * the two. A phone-written recap is only used when the phone is the chosen
+     * writer, so choosing cloud still gets a cloud recap.
+     */
+    fun reusable(saved: SavedRecap?, mode: String, upTo: String): SavedRecap? {
+        if (saved == null || mode == Library.SUMMARY_NONE || saved.upTo != upTo) return null
+        return when (saved.source) {
+            Library.SUMMARY_CLOUD -> saved
+            Library.SUMMARY_DEVICE -> saved.takeIf { mode == Library.SUMMARY_DEVICE }
+            else -> null
+        }
     }
 
     private fun onDeviceOr(hasDeviceModel: Boolean, why: Fallback?): Pair<Source, Fallback?> =

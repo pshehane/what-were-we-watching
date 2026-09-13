@@ -31,6 +31,12 @@ data class Library(
      */
     val summaryMode: String = SUMMARY_DEVICE,
     val shows: List<Show> = emptyList(),
+    /**
+     * Recaps already written, at most one per show. A second request for the same
+     * stopping point uses this instead of asking a model again, and because it
+     * syncs through Drive, so does a request from another phone.
+     */
+    val recaps: List<SavedRecap> = emptyList(),
     val deleted: List<Tombstone> = emptyList(),
 ) {
     companion object {
@@ -169,6 +175,26 @@ data class Show(
     /** Everyone on the show, you included. The couch match runs against this. */
     fun watcherIds(meId: String): List<String> = listOf(meId) + watchedWith.filter { it != meId }
 }
+
+/**
+ * A "Catch me up" recap that a model has already written.
+ *
+ * Only the newest one per show is kept. Once the show moves on, an older recap
+ * stops before the wrong episode and nobody would ask for it again.
+ */
+@Serializable
+data class SavedRecap(
+    val showId: String,
+    /** The episode the recap stops before, as the screen labels it: "S3 E5". */
+    val upTo: String,
+    val text: String,
+    /** Who wrote it: [Library.SUMMARY_CLOUD] or [Library.SUMMARY_DEVICE]. */
+    val source: String,
+    val modelName: String? = null,
+    /** False when the phone could only bullet and chose the points itself. */
+    val followedTheBrief: Boolean = true,
+    val updatedAt: String = "",
+)
 
 @Serializable
 data class Tombstone(

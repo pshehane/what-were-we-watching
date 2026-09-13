@@ -85,6 +85,31 @@ class TimeLeftTest {
         assertTrue(comedy > drama)
     }
 
+    // ------------------------------------------------------ typical runtime
+
+    @Test
+    fun `the typical runtime is the median episode`() {
+        // Silo season 1, as TMDB lists it.
+        val silo = listOf(62, 52, 66, 49, 54, 55, 51, 48, 48, 49)
+        assertEquals(51, TimeLeft.typicalRuntime(silo))
+    }
+
+    @Test
+    fun `a double-length finale does not drag the typical runtime up`() {
+        assertEquals(22, TimeLeft.typicalRuntime(listOf(22, 22, 22, 23, 44)))
+    }
+
+    @Test
+    fun `missing and zero runtimes are ignored`() {
+        assertEquals(45, TimeLeft.typicalRuntime(listOf(null, 0, 45, null)))
+    }
+
+    @Test
+    fun `no runtimes at all gives no answer`() {
+        assertEquals(null, TimeLeft.typicalRuntime(listOf(null, null)))
+        assertEquals(null, TimeLeft.typicalRuntime(emptyList()))
+    }
+
     // -------------------------------------------------------------- the clock
 
     @Test

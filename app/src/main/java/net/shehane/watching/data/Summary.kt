@@ -74,12 +74,6 @@ object Summary {
         else Source.RAW to (why ?: Fallback.NO_DEVICE_MODEL)
 
     /**
-     * The synopses, oldest first, as the model sees them.
-     *
-     * Built from [Recap.catchUp], so the cut-off is the same one the raw view
-     * uses and there is only one place it can go wrong.
-     */
-    /**
      * The same text, trimmed to fit a budget.
      *
      * The oldest material goes first: a phone-sized model has room for a few
@@ -105,6 +99,12 @@ object Summary {
         }
     }
 
+    /**
+     * The synopses, oldest first, as the model sees them.
+     *
+     * Built from [Recap.catchUp], so the cut-off is the same one the raw view
+     * uses and there is only one place it can go wrong.
+     */
     fun sourceText(recap: Recap.CatchUp): String = buildString {
         // Oldest first: a summary reads forwards even though the list shows the
         // most recent at the top.

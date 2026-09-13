@@ -162,13 +162,9 @@ object OnDevice {
      * Asks for the recap in the shape the caller wants, and settles for bullets
      * when that is all the phone offers.
      *
-     * [body] is the synopses; [instruction] is the whole prompt with the synopses
-     * already inside it. The summarisation path can only use the first.
-     */
-    /**
-     * [instruction] is asked for a prompt that fits a character budget, because a
-     * phone-sized model has a far smaller context than a cloud one and the caller
-     * is the only thing that knows what can be dropped.
+     * [instruction] builds a prompt that fits a character budget, because a phone
+     * model has a smaller context than a cloud one. [body] is the synopses alone,
+     * which is all the summarisation path can use.
      */
     suspend fun generate(
         context: Context,

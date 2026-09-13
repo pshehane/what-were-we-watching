@@ -122,6 +122,8 @@ object Tmdb {
         val name: String = "",
         val overview: String? = null,
         @SerialName("air_date") val airDate: String? = null,
+        /** Minutes. Filled in for most episodes, unlike the show-level field. */
+        val runtime: Int? = null,
     ) {
         /** TMDB sends an empty string rather than omitting the field. */
         val summary: String? get() = overview?.takeIf { it.isNotBlank() }

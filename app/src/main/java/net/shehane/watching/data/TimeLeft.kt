@@ -63,6 +63,18 @@ object TimeLeft {
         }
     }
 
+    /**
+     * The usual length of an episode, from a list of individual runtimes.
+     *
+     * This uses the median. A double-length finale or a missing value would pull
+     * an average away from what a normal episode takes.
+     */
+    fun typicalRuntime(values: List<Int?>): Int? {
+        val known = values.filterNotNull().filter { it > 0 }.sorted()
+        if (known.isEmpty()) return null
+        return known[(known.size - 1) / 2]
+    }
+
     /** One episode of [show], in minutes, falling back to a plain assumption. */
     fun episodeLength(show: Show): Int = show.runtimeMinutes ?: ASSUMED_MINUTES
 

@@ -37,12 +37,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.shehane.watching.data.Clock
 import net.shehane.watching.MainViewModel
 import net.shehane.watching.data.Recap
 import net.shehane.watching.data.Summary
+import net.shehane.watching.data.TimeLeft
 import net.shehane.watching.data.Tmdb
 import net.shehane.watching.data.Share
 import net.shehane.watching.data.LibraryStore
@@ -73,6 +75,7 @@ fun ShowScreen(
     onFinish: () -> Unit,
     onReactivate: () -> Unit,
     onVerdict: (Boolean?) -> Unit,
+    onSetRuntime: (Int?) -> Unit,
     seasons: Map<Int, Tmdb.Season>,
     seasonsLoading: Boolean,
     onNeedSeasons: (List<Int>) -> Unit,
@@ -91,12 +94,14 @@ fun ShowScreen(
     var confirmDelete by remember { mutableStateOf(false) }
     var sharing by remember(show.id) { mutableStateOf(false) }
     var pickingSeason by remember(show.id) { mutableStateOf(false) }
+    var editingRuntime by remember(show.id) { mutableStateOf(false) }
     var asking by remember(show.id) { mutableStateOf<Asking?>(null) }
 
     // Back shuts whichever block is open before it leaves the screen. Both live
     // here rather than in the view model, so the handler does too.
     BackHandler(enabled = sharing) { sharing = false }
     BackHandler(enabled = pickingSeason) { pickingSeason = false }
+    BackHandler(enabled = editingRuntime) { editingRuntime = false }
     // Clears the recap too. Without that, backing out and reopening shows the
     // answer from last time, which is wrong the moment the setting changes.
     BackHandler(enabled = asking != null) { asking = null; onCloseRecap() }
@@ -385,15 +390,54 @@ fun ShowScreen(
                             height = 34.dp,
                         )
                     }
-                    if (show.seasonCount != null || show.episodeCount != null) {
-                        VGap(8.dp)
+                    VGap(8.dp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val counts = listOfNotNull(
+                            show.seasonCount?.let { "$it season" + if (it == 1) "" else "s" },
+                            show.episodeCount?.let { "$it episode" + if (it == 1) "" else "s" },
+                        ).joinToString(" · ")
+                        if (counts.isNotEmpty()) {
+                            BasicText("$counts · ", style = Type.Meta)
+                        }
+                        // Tappable, because TMDB is sometimes wrong and the couch's
+                        // time estimates are only as good as this number.
                         BasicText(
-                            listOfNotNull(
-                                show.seasonCount?.let { "$it season" + if (it == 1) "" else "s" },
-                                show.episodeCount?.let { "$it episode" + if (it == 1) "" else "s" },
-                            ).joinToString(" · "),
-                            style = Type.Meta,
+                            show.runtimeMinutes?.let { "${it}m an episode" } ?: "length unknown",
+                            style = Type.Meta.copy(color = Ink.Amber),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable { editingRuntime = !editingRuntime }
+                                .padding(horizontal = 4.dp, vertical = 6.dp),
                         )
+                    }
+                    if (editingRuntime) {
+                        val current = show.runtimeMinutes ?: TimeLeft.ASSUMED_MINUTES
+                        VGap(6.dp)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            SquareButton(onClick = { onSetRuntime((current - 1).coerceAtLeast(1)) }) {
+                                Draw.Minus(14.dp)
+                            }
+                            BasicText(
+                                "${current}m",
+                                style = Type.Label.copy(textAlign = TextAlign.Center),
+                                modifier = Modifier.weight(1f),
+                            )
+                            SquareButton(onClick = { onSetRuntime(current + 1) }) {
+                                Draw.Plus(14.dp, Ink.Text)
+                            }
+                        }
+                        VGap(8.dp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                            for (minutes in listOf(22, 30, 45, 60)) {
+                                PillButton(
+                                    "${minutes}m",
+                                    { onSetRuntime(minutes); editingRuntime = false },
+                                    Modifier.weight(1f),
+                                    filled = minutes == show.runtimeMinutes,
+                                    height = 36.dp,
+                                )
+                            }
+                        }
                     }
                 }
 

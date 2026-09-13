@@ -195,6 +195,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun onResumed() {
         store.wakeSnoozed()
         if (drive.isSignedIn) syncNow(quiet = true)
+        backfillDetails()
     }
 
     // ----------------------------------------------------------------- couch
@@ -510,7 +511,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun fillDetails(showId: String) {
         val show = library.value.showOrNull(showId) ?: return
-        val tmdbId = show.tmdbId ?: return
+        if (show.tmdbId == null) return
         // Any one of these missing is reason enough to ask. Runtime was added
         // after the others, so every show recorded before it has none.
         if (show.seasonCount != null && show.wikipediaUrl != null &&
@@ -521,23 +522,60 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         if (!detailsAsked.add(showId)) return
 
         viewModelScope.launch {
-            if (show.seasonCount == null || show.runtimeMinutes == null) {
-                runCatching { Tmdb.detail(tmdbId) }
-                    .onSuccess {
-                        store.fillDetails(
-                            showId,
-                            it.seasonCount,
-                            it.episodeCount,
-                            it.runTimes.firstOrNull(),
-                        )
-                    }
-            }
-            if (show.wikipediaUrl == null) {
-                runCatching { Tmdb.wikipediaUrl(tmdbId, show.title, show.year) }
-                    .onSuccess { url -> url?.let { store.setWikipediaUrl(showId, it) } }
-            }
+            lookUpDetails(show)
             pushSoon()
         }
+    }
+
+    private var backfillJob: Job? = null
+
+    /**
+     * Fetches the runtime for every show that has none, one show at a time.
+     *
+     * Without this, a show only got its runtime when you opened it. Most couch
+     * cards then said "about" because they were using the 45-minute guess.
+     */
+    fun backfillDetails() {
+        if (backfillJob?.isActive == true) return
+        val missing = library.value.shows.filter {
+            it.tmdbId != null && it.runtimeMinutes == null && detailsAsked.add(it.id)
+        }
+        if (missing.isEmpty()) return
+
+        backfillJob = viewModelScope.launch {
+            for (show in missing) lookUpDetails(show)
+            pushSoon()
+        }
+    }
+
+    private suspend fun lookUpDetails(show: Show) {
+        val tmdbId = show.tmdbId ?: return
+
+        if (show.seasonCount == null || show.runtimeMinutes == null) {
+            val detail = runCatching { Tmdb.detail(tmdbId) }.getOrNull()
+            if (detail != null) {
+                // TMDB's show-level runtime is empty for most current shows.
+                // The episodes in a season almost always have one, so use those.
+                val runtime = show.runtimeMinutes
+                    ?: detail.runTimes.firstOrNull { it > 0 }
+                    ?: runtimeFromSeason(tmdbId, show.position.season, show.seasonCount ?: detail.seasonCount)
+                store.fillDetails(show.id, detail.seasonCount, detail.episodeCount, runtime)
+            }
+        }
+
+        if (show.wikipediaUrl == null) {
+            runCatching { Tmdb.wikipediaUrl(tmdbId, show.title, show.year) }
+                .onSuccess { url -> url?.let { store.setWikipediaUrl(show.id, it) } }
+        }
+    }
+
+    /** The median episode runtime of the season you are in. */
+    private suspend fun runtimeFromSeason(tmdbId: Int, season: Int, seasonCount: Int?): Int? {
+        val number = season.coerceIn(1, maxOf(1, seasonCount ?: season))
+        val cached = _seasons.value[key(tmdbId, number)]
+        val fetched = cached ?: runCatching { Tmdb.season(tmdbId, number) }.getOrNull()
+            ?.also { _seasons.value = _seasons.value + (key(tmdbId, number) to it) }
+        return fetched?.let { TimeLeft.typicalRuntime(it.episodes.map { e -> e.runtime }) }
     }
 
     fun setRuntime(showId: String, minutes: Int?) {

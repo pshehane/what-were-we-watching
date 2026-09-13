@@ -219,6 +219,7 @@ private fun App() {
                         onFinish = { vm.finish(show.id); vm.popScreen() },
                         onReactivate = { vm.reactivate(show.id) },
                         onVerdict = { vm.setVerdict(show.id, it) },
+                        onSetRuntime = { vm.setRuntime(show.id, it) },
                         // The cache is passed rather than read through a call, so
                         // Compose can see the sheet's dependency on it.
                         seasons = vm.seasonsFor(show, seasonCache),

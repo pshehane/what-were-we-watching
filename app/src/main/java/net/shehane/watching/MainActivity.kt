@@ -45,6 +45,7 @@ import net.shehane.watching.ui.AboutScreen
 import net.shehane.watching.ui.AddScreen
 import net.shehane.watching.ui.AddSheet
 import net.shehane.watching.data.Couch
+import net.shehane.watching.ui.CastScreen
 import net.shehane.watching.ui.CatchUpScreen
 import net.shehane.watching.ui.CouchScreen
 import net.shehane.watching.ui.Draw
@@ -82,6 +83,11 @@ private fun App() {
     val query by vm.query.collectAsStateWithLifecycle()
     val results by vm.results.collectAsStateWithLifecycle()
     val searching by vm.searching.collectAsStateWithLifecycle()
+    val castQuery by vm.castQuery.collectAsStateWithLifecycle()
+    val castHits by vm.castHits.collectAsStateWithLifecycle()
+    val castSearching by vm.castSearching.collectAsStateWithLifecycle()
+    val castPicked by vm.castPicked.collectAsStateWithLifecycle()
+    val castPanes by vm.castPanes.collectAsStateWithLifecycle()
     val searchError by vm.searchError.collectAsStateWithLifecycle()
     val syncState by vm.syncState.collectAsStateWithLifecycle()
     val toast by vm.toast.collectAsStateWithLifecycle()
@@ -192,6 +198,26 @@ private fun App() {
                     onClear = vm::clearQuery,
                     onPick = vm::beginAdd,
                     onOpenExisting = { vm.go(Screen.ShowDetail(it)) },
+                    onCastSearch = { vm.go(Screen.Cast) },
+                    onBack = { vm.popScreen() },
+                    topInset = insets,
+                )
+            }
+
+            is Screen.Cast -> {
+                CastScreen(
+                    library = library,
+                    query = castQuery,
+                    hits = castHits,
+                    searching = castSearching,
+                    picked = castPicked,
+                    panes = castPanes,
+                    onQueryChanged = vm::onCastQueryChanged,
+                    onPick = vm::pickPerson,
+                    onDrop = vm::dropPerson,
+                    onOpenTitle = vm::openTitle,
+                    onOpenPerson = vm::openPerson,
+                    onAdd = vm::beginAdd,
                     onBack = { vm.popScreen() },
                     topInset = insets,
                 )

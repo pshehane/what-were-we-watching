@@ -72,6 +72,7 @@ fun AddScreen(
     onClear: () -> Unit,
     onPick: (Tmdb.SearchItem) -> Unit,
     onOpenExisting: (String) -> Unit,
+    onCastSearch: () -> Unit,
     onBack: () -> Unit,
     topInset: PaddingValues,
 ) {
@@ -112,6 +113,20 @@ fun AddScreen(
         ) {
             RoundButtonPlain(onBack) { Draw.Chevron(22.dp, Ink.Text, pointsLeft = true) }
             BasicText("Add a show", style = Type.Screen.copy(fontSize = 22.sp))
+            Spacer(Modifier.weight(1f))
+            // For when you know a face rather than a title.
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(11.dp))
+                    .border(1.dp, Ink.Line, RoundedCornerShape(11.dp))
+                    .clickable(onClick = onCastSearch)
+                    .padding(horizontal = 11.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Draw.People(15.dp, Ink.Muted)
+                HGap(7.dp)
+                BasicText("Cast search", style = Type.BodyTight.copy(color = Ink.Text))
+            }
         }
 
         // --- the field ---

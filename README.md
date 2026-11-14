@@ -4,7 +4,7 @@ An Android app for one household. It answers one question quickly: **who is on t
 
 Tap the people who are sitting down. The list re-sorts into shows everyone seated is part-way through, then shows only some of them are on. Every card says which streaming service to open and which profile to pick.
 
-> **Status:** versions 1.0 and 2.0 are complete. Suggestions (3.0) are built; the guided first-run setup is not. The app runs on several Android phones, and 154 unit tests pass.
+> **Status:** versions 1.0 and 2.0 are complete. Suggestions (3.0) are built; the guided first-run setup is not. The app runs on several Android phones, and 173 unit tests pass.
 
 ---
 
@@ -24,6 +24,16 @@ Films sit in the same list as series. Search finds both, and a result says which
 A film has no position to track, so its card shows how long it runs where a series shows `S2 · E5`. That is also how you tell them apart at a glance. The `+1` button on a series card is a tick on a film's, because watching a film once finishes it.
 
 The time budget counts a film as one sitting: a three-hour evening fits four episodes of a 45-minute series, or one 116-minute film.
+
+### Cast search
+
+On *Add a show* there is a **Cast search**. Look up anyone who worked on something: actors, directors, composers.
+
+Their work appears as a column. Tapping a title does not open it; it adds a column to the right with everyone on that title. Tapping a name there adds that person's work, and so on for as long as the thread is worth following. Swipe left and right to move between columns. A small **+** on a title opens the normal add sheet.
+
+Pick a second person and the first column becomes what the two of them worked on together, with each of their roles.
+
+Two rules keep the lists readable. Credits where somebody turned up as themselves, such as chat shows and award ceremonies, sort below actual work. And the two catalogs are ranked separately and then interleaved, because their popularity scores are not on the same scale: a three-episode guest spot on a long-running series scores about 1700 where a film someone carried scores about 20.
 
 ### Adding a show
 
@@ -139,7 +149,7 @@ Plain Gradle also works:
 .\gradlew.bat :app:testDebugUnitTest
 ```
 
-154 tests in 12 files. They cover the couch match rule, the two-phone merge, the CSV, starter-file seeding, suggestions, the recap cut-off, recap fallback order, saved recaps, movies, the share message, positions, the time budget, filling in missing details, and reading Gemini responses. All of it is pure logic, so no device is needed.
+173 tests in 13 files. They cover the couch match rule, the two-phone merge, the CSV, starter-file seeding, suggestions, the recap cut-off, recap fallback order, saved recaps, movies, cast search, the share message, positions, the time budget, filling in missing details, and reading Gemini responses. All of it is pure logic, so no device is needed.
 
 ## Recaps
 
@@ -211,6 +221,7 @@ app/src/main/java/net/shehane/watching/
   data/TimeLeft.kt            the time budget arithmetic
   data/Share.kt               the share sheet message
   data/Csv.kt                 the readable copy
+  data/Cast.kt                credits, who was on what, and what two people share
   data/Tmdb.kt                search (both catalogs), detail, seasons, cast, providers, Wikipedia
   data/DriveSync.kt           Google Sign-In and the Drive round trip
   data/Starter.kt             first-run household seeding

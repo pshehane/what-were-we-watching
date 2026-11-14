@@ -37,6 +37,40 @@ sealed interface Screen {
     data object Wishlist : Screen
     data object Ideas : Screen
     data object CatchUp : Screen
+    data object Cast : Screen
+}
+
+/**
+ * One column of the cast search.
+ *
+ * The screen is a list of these, pushed on the right and truncated when you go
+ * back and tap something earlier. [selected] is the row in this column that
+ * opened the next one, so the trail you followed stays visible.
+ */
+sealed interface CastPane {
+    val heading: String
+    val subheading: String?
+    val loading: Boolean
+    val selected: String?
+
+    /** What somebody worked on, or what two people worked on together. */
+    data class Work(
+        override val heading: String,
+        override val subheading: String?,
+        val rows: List<net.shehane.watching.data.Cast.Credit>,
+        val isOverlap: Boolean = false,
+        override val loading: Boolean = false,
+        override val selected: String? = null,
+    ) : CastPane
+
+    /** Everyone on one title. */
+    data class People(
+        override val heading: String,
+        override val subheading: String?,
+        val members: List<net.shehane.watching.data.Cast.Member>,
+        override val loading: Boolean = false,
+        override val selected: String? = null,
+    ) : CastPane
 }
 
 /**
@@ -1202,6 +1236,178 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     var lastAddedId: String? = null
         private set
+
+    // ----------------------------------------------------------- cast search
+
+    private val _castQuery = MutableStateFlow("")
+    val castQuery: StateFlow<String> = _castQuery.asStateFlow()
+
+    private val _castHits = MutableStateFlow<List<Tmdb.PersonHit>>(emptyList())
+    val castHits: StateFlow<List<Tmdb.PersonHit>> = _castHits.asStateFlow()
+
+    private val _castSearching = MutableStateFlow(false)
+    val castSearching: StateFlow<Boolean> = _castSearching.asStateFlow()
+
+    /** Nobody, one person, or the two whose shared work is being shown. */
+    private val _castPicked = MutableStateFlow<List<Tmdb.PersonHit>>(emptyList())
+    val castPicked: StateFlow<List<Tmdb.PersonHit>> = _castPicked.asStateFlow()
+
+    private val _castPanes = MutableStateFlow<List<CastPane>>(emptyList())
+    val castPanes: StateFlow<List<CastPane>> = _castPanes.asStateFlow()
+
+    private var castSearchJob: Job? = null
+    private var castPaneJob: Job? = null
+
+    fun onCastQueryChanged(text: String) {
+        _castQuery.value = text
+        castSearchJob?.cancel()
+        if (text.isBlank()) {
+            _castHits.value = emptyList()
+            _castSearching.value = false
+            return
+        }
+        castSearchJob = viewModelScope.launch {
+            _castSearching.value = true
+            // The same quarter second the title search waits, so typing a name
+            // does not spend a request per letter.
+            delay(250)
+            runCatching { Tmdb.searchPeople(text) }
+                .onSuccess { _castHits.value = it }
+                .onFailure { _castHits.value = emptyList() }
+            _castSearching.value = false
+        }
+    }
+
+    /**
+     * Follow somebody. A second person switches the first column to what the two
+     * of them share, which is the question two names are usually asking.
+     */
+    fun pickPerson(person: Tmdb.PersonHit) {
+        val already = _castPicked.value
+        if (already.any { it.id == person.id }) return
+        // Two is the limit: three people rarely share anything, and the column
+        // would be empty more often than not.
+        val picked = (already + person).takeLast(2)
+        _castPicked.value = picked
+        _castQuery.value = ""
+        _castHits.value = emptyList()
+        loadFirstPane(picked)
+    }
+
+    fun dropPerson(id: Int) {
+        val picked = _castPicked.value.filterNot { it.id == id }
+        _castPicked.value = picked
+        loadFirstPane(picked)
+    }
+
+    private fun loadFirstPane(picked: List<Tmdb.PersonHit>) {
+        castPaneJob?.cancel()
+        if (picked.isEmpty()) {
+            _castPanes.value = emptyList()
+            return
+        }
+
+        val heading = picked.joinToString(" and ") { it.name }
+        val subheading =
+            if (picked.size == 2) "What they both worked on"
+            else picked.first().role.takeIf { it.isNotBlank() }
+
+        _castPanes.value = listOf(
+            CastPane.Work(heading, subheading, emptyList(), picked.size == 2, loading = true)
+        )
+
+        castPaneJob = viewModelScope.launch {
+            val rows = if (picked.size == 2) {
+                val a = runCatching { Tmdb.creditsOf(picked[0].id) }.getOrDefault(emptyList())
+                val b = runCatching { Tmdb.creditsOf(picked[1].id) }.getOrDefault(emptyList())
+                net.shehane.watching.data.Cast.overlap(a, b).map {
+                    net.shehane.watching.data.Cast.Credit(
+                        item = it.item,
+                        role = picked[0].name + ": " + it.roleA + "\n" + picked[1].name + ": " + it.roleB,
+                        year = it.year,
+                        popularity = it.popularity,
+                        appearance = it.appearance,
+                        episodes = it.episodes,
+                    )
+                }
+            } else {
+                runCatching { Tmdb.creditsOf(picked[0].id) }.getOrDefault(emptyList())
+            }
+            _castPanes.value = listOf(
+                CastPane.Work(heading, subheading, rows, picked.size == 2)
+            )
+        }
+    }
+
+    /** Tapping a title: everyone on it becomes the next column. */
+    fun openTitle(paneIndex: Int, item: Tmdb.SearchItem) {
+        val key = item.id.toString() + item.medium
+        val kept = _castPanes.value.take(paneIndex + 1).mapIndexed { i, pane ->
+            if (i != paneIndex) pane else when (pane) {
+                is CastPane.Work -> pane.copy(selected = key)
+                is CastPane.People -> pane
+            }
+        }
+        _castPanes.value = kept + CastPane.People(
+            heading = item.name,
+            subheading = listOfNotNull(
+                item.year?.toString(),
+                if (item.isMovie) "Film" else "TV",
+            ).joinToString(" · "),
+            members = emptyList(),
+            loading = true,
+        )
+
+        castPaneJob?.cancel()
+        castPaneJob = viewModelScope.launch {
+            val members = runCatching { Tmdb.peopleIn(item.id, item.medium) }
+                .getOrDefault(emptyList())
+            replaceLast { (it as CastPane.People).copy(members = members, loading = false) }
+        }
+    }
+
+    /** Tapping a name: what they worked on becomes the next column. */
+    fun openPerson(paneIndex: Int, member: net.shehane.watching.data.Cast.Member) {
+        val kept = _castPanes.value.take(paneIndex + 1).mapIndexed { i, pane ->
+            if (i != paneIndex) pane else when (pane) {
+                is CastPane.People -> pane.copy(selected = member.id.toString())
+                is CastPane.Work -> pane
+            }
+        }
+        _castPanes.value = kept + CastPane.Work(
+            heading = member.name,
+            subheading = member.role,
+            rows = emptyList(),
+            loading = true,
+        )
+
+        castPaneJob?.cancel()
+        castPaneJob = viewModelScope.launch {
+            val rows = runCatching { Tmdb.creditsOf(member.id) }.getOrDefault(emptyList())
+            replaceLast { (it as CastPane.Work).copy(rows = rows, loading = false) }
+        }
+    }
+
+    /**
+     * Fills in the column that was just pushed, unless the trail moved on while
+     * the request was in flight. Without the check a slow answer would land in
+     * whatever column happens to be last by then.
+     */
+    private fun replaceLast(transform: (CastPane) -> CastPane) {
+        val panes = _castPanes.value
+        val last = panes.lastOrNull() ?: return
+        if (!last.loading) return
+        _castPanes.value = panes.dropLast(1) + transform(last)
+    }
+
+    fun clearCast() {
+        castSearchJob?.cancel()
+        castPaneJob?.cancel()
+        _castQuery.value = ""
+        _castHits.value = emptyList()
+        _castPicked.value = emptyList()
+        _castPanes.value = emptyList()
+    }
 
     // ------------------------------------------------------------------ sync
 

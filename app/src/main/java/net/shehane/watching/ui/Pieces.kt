@@ -462,6 +462,31 @@ object Draw {
         }
     }
 
+    /** Two heads and shoulders. The way in to searching by who made something. */
+    @Composable
+    fun People(size: Dp = 20.dp, colour: Color = Ink.Muted) {
+        Canvas(Modifier.size(size)) {
+            val w = this.size.width
+            val s = w * 0.085f
+            // The one behind, up and to the right.
+            drawCircle(colour, radius = w * 0.14f, center = Offset(w * 0.66f, w * 0.30f), style = Stroke(s))
+            drawArc(
+                colour, 200f, 140f, false,
+                topLeft = Offset(w * 0.45f, w * 0.50f),
+                size = Size(w * 0.42f, w * 0.42f),
+                style = Stroke(s, cap = StrokeCap.Round),
+            )
+            // The one in front.
+            drawCircle(colour, radius = w * 0.17f, center = Offset(w * 0.37f, w * 0.33f), style = Stroke(s))
+            drawArc(
+                colour, 195f, 150f, false,
+                topLeft = Offset(w * 0.11f, w * 0.52f),
+                size = Size(w * 0.52f, w * 0.52f),
+                style = Stroke(s, cap = StrokeCap.Round),
+            )
+        }
+    }
+
     @Composable
     fun Gear(size: Dp = 20.dp, colour: Color = Ink.Muted) {
         Canvas(Modifier.size(size)) {

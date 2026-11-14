@@ -10,6 +10,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import net.shehane.watching.BuildConfig
 import net.shehane.watching.model.Service
 import net.shehane.watching.model.Show
+import net.shehane.watching.data.Cast
 
 /**
  * The catalog. One call while you type, three more when you tap a result, and
@@ -120,6 +121,126 @@ object Tmdb {
     /** "tv" or "movie" as TMDB spells it in a URL. They happen to match our words. */
     private fun path(medium: String): String =
         if (medium == Show.MEDIUM_MOVIE) "movie" else "tv"
+
+    // ------------------------------------------------------------------ people
+
+    @Serializable
+    private data class PersonSearchResponse(val results: List<PersonHit> = emptyList())
+
+    /** Somebody who worked on something, as the person search returns them. */
+    @Serializable
+    data class PersonHit(
+        val id: Int,
+        val name: String = "",
+        /** TMDB's guess at what they are best known for: Acting, Directing, Sound. */
+        @SerialName("known_for_department") val department: String? = null,
+        @SerialName("profile_path") val profilePath: String? = null,
+        @SerialName("known_for") val knownFor: List<CreditRow> = emptyList(),
+    ) {
+        /** "Acting" reads oddly under a name; the rest of TMDB's words are fine. */
+        val role: String
+            get() = when (department) {
+                null, "" -> ""
+                "Acting" -> "Actor"
+                "Sound" -> "Music and sound"
+                "Writing" -> "Writer"
+                "Directing" -> "Director"
+                "Camera" -> "Cinematography"
+                else -> department
+            }
+
+        /** The two or three titles TMDB thinks place them, for the search row. */
+        val placing: String
+            get() = knownFor.mapNotNull { it.title.takeIf(String::isNotBlank) }.take(3)
+                .joinToString(" · ")
+    }
+
+    suspend fun searchPeople(query: String): List<PersonHit> {
+        if (query.isBlank() || !isConfigured) return emptyList()
+        val url = withKey(
+            "$BASE/search/person?query=${Http.encode(query)}&include_adult=false&language=en-US&page=1"
+        )
+        val body = Http.getString(url, authHeaders())
+        return json.decodeFromString(PersonSearchResponse.serializer(), body).results
+    }
+
+    /**
+     * One title somebody worked on, from either catalog and from either side of
+     * the camera. [character] is set when they acted, [job] when they did not.
+     */
+    @Serializable
+    data class CreditRow(
+        val id: Int,
+        @SerialName("name") val seriesName: String = "",
+        @SerialName("title") val movieTitle: String = "",
+        @SerialName("media_type") val mediaType: String? = null,
+        @SerialName("poster_path") val posterPath: String? = null,
+        @SerialName("first_air_date") val firstAirDate: String? = null,
+        @SerialName("release_date") val releaseDate: String? = null,
+        val character: String? = null,
+        val job: String? = null,
+        val popularity: Double = 0.0,
+        @SerialName("episode_count") val episodes: Int? = null,
+    ) {
+        val title: String get() = seriesName.ifBlank { movieTitle }
+        val medium: String get() = if (mediaType == "movie") Show.MEDIUM_MOVIE else Show.MEDIUM_TV
+        val year: Int? get() = (firstAirDate ?: releaseDate)?.take(4)?.toIntOrNull()
+
+        /** As a row the rest of the app already knows how to draw and add. */
+        fun asItem(): SearchItem = SearchItem(
+            id = id,
+            seriesName = seriesName,
+            movieTitle = movieTitle,
+            firstAirDate = firstAirDate,
+            releaseDate = releaseDate,
+            posterPath = posterPath,
+            mediaType = mediaType,
+            medium = medium,
+        )
+    }
+
+    @Serializable
+    private data class CombinedCredits(
+        val cast: List<CreditRow> = emptyList(),
+        val crew: List<CreditRow> = emptyList(),
+    )
+
+    /** Everything one person worked on, acting and crew together. */
+    suspend fun creditsOf(personId: Int): List<Cast.Credit> {
+        if (!isConfigured) return emptyList()
+        val body = Http.getString(
+            withKey("$BASE/person/$personId/combined_credits?language=en-US"), authHeaders()
+        )
+        val all = json.decodeFromString(CombinedCredits.serializer(), body)
+        return Cast.creditsFrom(all.cast, all.crew)
+    }
+
+    @Serializable
+    private data class TitleCredits(
+        val cast: List<PersonRow> = emptyList(),
+        val crew: List<PersonRow> = emptyList(),
+    )
+
+    @Serializable
+    data class PersonRow(
+        val id: Int,
+        val name: String = "",
+        @SerialName("profile_path") val profilePath: String? = null,
+        val character: String? = null,
+        val job: String? = null,
+        val order: Int = 999,
+        @SerialName("total_episode_count") val episodes: Int? = null,
+    )
+
+    /** Everyone worth naming on one title: the billed cast, then the key crew. */
+    suspend fun peopleIn(tmdbId: Int, medium: String): List<Cast.Member> {
+        if (!isConfigured) return emptyList()
+        val body = Http.getString(
+            withKey("$BASE/${path(medium)}/$tmdbId/credits?language=en-US"), authHeaders()
+        )
+        val credits = json.decodeFromString(TitleCredits.serializer(), body)
+        return Cast.membersFrom(credits.cast, credits.crew)
+    }
 
     // -------------------------------------------------------------------- cast
 

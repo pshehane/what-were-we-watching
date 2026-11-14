@@ -3,6 +3,7 @@ package net.shehane.watching.data
 import java.time.Duration
 import java.time.LocalTime
 import net.shehane.watching.model.Show
+import net.shehane.watching.model.spellRuntime
 
 /**
  * How much of an evening is left, and what fits in it.
@@ -93,6 +94,8 @@ object TimeLeft {
         // Whole episodes that fit outright, then one more if it only just spills.
         var count = availableMinutes / each
         if ((count + 1) * each - availableMinutes in 1..SLACK_MINUTES) count++
+        // A film is one sitting. "2 movies" would be the same film twice.
+        if (show.isMovie) count = count.coerceAtMost(1)
 
         val runtime = count * each
         return Fits(
@@ -104,16 +107,7 @@ object TimeLeft {
     }
 
     /** "1h 45m", "45m", "2h". Empty for nothing left. */
-    fun spell(minutes: Int): String {
-        if (minutes <= 0) return ""
-        val h = minutes / 60
-        val m = minutes % 60
-        return when {
-            h == 0 -> "${m}m"
-            m == 0 -> "${h}h"
-            else -> "${h}h ${m}m"
-        }
-    }
+    fun spell(minutes: Int): String = spellRuntime(minutes)
 
     /** "10:30 pm", in the phone's own clock style being too much trouble for one label. */
     fun spellClock(minutesPastMidnight: Int): String {

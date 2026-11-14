@@ -113,6 +113,15 @@ data class Show(
 
     // --- from TMDB, written once when the show is added ---
     val tmdbId: Int? = null,
+    /**
+     * [MEDIUM_TV] or [MEDIUM_MOVIE]. Defaults to a series, so every record
+     * written before movies existed stays exactly what it was.
+     *
+     * A movie is the same record with one episode and no position. Keeping both
+     * in one list is the point: the couch question is "what do we put on",
+     * and the answer should not depend on which catalog the answer came from.
+     */
+    val medium: String = MEDIUM_TV,
     val title: String,
     val year: Int? = null,
     val posterPath: String? = null,
@@ -125,6 +134,9 @@ data class Show(
      * An average, because that is what TMDB publishes per show and what the couch
      * needs. A drama that is 42 one week and 47 the next is still "about 45", and
      * the time budget is fuzzy by ten minutes anyway.
+     *
+     * For a movie this is the whole thing, which is why a movie can show it where
+     * a series shows its position.
      */
     val runtimeMinutes: Int? = null,
     val overview: String? = null,
@@ -158,6 +170,11 @@ data class Show(
         const val STATE_FINISHED = "finished"
         /** Want to watch, not started. No position yet, and never on the couch list. */
         const val STATE_WISHLIST = "wishlist"
+
+        /** A series. The default, and what every record written before movies is. */
+        const val MEDIUM_TV = "tv"
+        /** One sitting, no position. Same word TMDB uses, so it routes API calls too. */
+        const val MEDIUM_MOVIE = "movie"
     }
 
     val isActive: Boolean get() = state == STATE_ACTIVE
@@ -167,6 +184,25 @@ data class Show(
     val isWishlist: Boolean get() = state == STATE_WISHLIST
     /** Both sit below everything else, but they mean different things. */
     val isDone: Boolean get() = isAbandoned || isFinished
+
+    val isMovie: Boolean get() = medium == MEDIUM_MOVIE
+    /** Anything that is not explicitly a movie, including records with no medium. */
+    val isSeries: Boolean get() = !isMovie
+
+    /**
+     * What the cards print where a series prints its position.
+     *
+     * A movie has no position to show, so it shows how long it is. That doubles
+     * as the way you tell the two apart at a glance, which is why no card needs a
+     * badge saying "film".
+     */
+    val marker: String get() = if (isMovie) runtimeLabel else position.toString()
+
+    /** The same thing, in the space a smaller card has. */
+    val markerShort: String get() = if (isMovie) runtimeLabel else position.short
+
+    private val runtimeLabel: String
+        get() = runtimeMinutes?.takeIf { it > 0 }?.let(::spellRuntime) ?: "Movie"
 
     val isLoved: Boolean get() = liked == true
     /** Seen and it did not land, or we are never going to. Either way, no more of these. */
@@ -203,3 +239,19 @@ data class Tombstone(
     val kind: String,
     val deletedAt: String,
 )
+
+/**
+ * "1h 52m", "47m", "2h". Lives here because a movie's length is part of how a
+ * record describes itself; [net.shehane.watching.data.TimeLeft] uses the same
+ * function so a runtime and a budget are never spelled two different ways.
+ */
+fun spellRuntime(minutes: Int): String {
+    if (minutes <= 0) return ""
+    val h = minutes / 60
+    val m = minutes % 60
+    return when {
+        h == 0 -> "${m}m"
+        m == 0 -> "${h}h"
+        else -> "${h}h ${m}m"
+    }
+}

@@ -273,7 +273,7 @@ private fun StalledCard(
                 BasicText(show.title, style = Type.ShowTitleSm, maxLines = 1, overflow = Clip)
                 VGap(3.dp)
                 BasicText(
-                    "${show.position.short} — last watched ${Clock.ago(show.lastWatchedAt ?: show.addedAt)}",
+                    "${show.markerShort} — last watched ${Clock.ago(show.lastWatchedAt ?: show.addedAt)}",
                     style = Type.Meta,
                     maxLines = 1,
                     overflow = Clip,
@@ -304,7 +304,9 @@ private fun GuessRow(item: Tmdb.SearchItem, onWishlist: () -> Unit) {
             BasicText(item.name, style = Type.ShowTitleSm, maxLines = 1, overflow = Clip)
             VGap(3.dp)
             BasicText(
-                item.year?.toString() ?: "TV series",
+                listOfNotNull(item.year?.toString(), if (item.isMovie) "Film" else null)
+                    .joinToString(" · ")
+                    .ifBlank { "TV series" },
                 style = Type.Meta,
                 maxLines = 1,
                 overflow = Clip,

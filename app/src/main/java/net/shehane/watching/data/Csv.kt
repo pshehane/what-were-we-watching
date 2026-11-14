@@ -14,7 +14,7 @@ import net.shehane.watching.model.Show
 object Csv {
 
     private val HEADER = listOf(
-        "Title", "Year", "Service", "Profile", "Watched with",
+        "Title", "Kind", "Year", "Service", "Profile", "Watched with",
         "Season", "Episode", "Minutes", "Status", "Verdict", "Comes back",
         "Last watched", "Added", "TMDB id", "Wikipedia",
     )
@@ -48,16 +48,18 @@ object Csv {
 
         return listOf(
             show.title,
+            if (show.isMovie) "movie" else "series",
             show.year?.toString() ?: "",
             service?.name ?: "",
             profile?.name ?: "",
             withNames,
             // A wishlist entry was never started, so writing S1 E1 would be a
-            // small lie in a file meant for reading.
-            if (show.isWishlist) "" else show.position.season.toString(),
+            // small lie in a file meant for reading. Neither column means
+            // anything for a film.
+            if (show.isWishlist || show.isMovie) "" else show.position.season.toString(),
             // Blank rather than 0: a spreadsheet reader has no idea what episode
             // zero means, and "not started" is what the season column already says.
-            if (show.isWishlist || show.position.notStarted) ""
+            if (show.isWishlist || show.isMovie || show.position.notStarted) ""
             else show.position.episode.toString(),
             show.runtimeMinutes?.toString() ?: "",
             show.state,

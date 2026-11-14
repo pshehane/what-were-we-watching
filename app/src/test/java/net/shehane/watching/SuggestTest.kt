@@ -31,8 +31,11 @@ class SuggestTest {
         Service("netflix", "Netflix", "#E0574C"),
     )
 
+    // Counted from the real clock, not from a fixed date, because the rule under
+    // test compares against today. A fixed NOW made this file pass in the week it
+    // was written and fail every week after that.
     private fun daysAgo(n: Long): String =
-        Instant.parse(NOW).minus(n, ChronoUnit.DAYS).toString()
+        Instant.now().minus(n, ChronoUnit.DAYS).toString()
 
     private fun show(
         id: String,
@@ -258,8 +261,8 @@ class SuggestTest {
     fun `a recommendation already in the library is never offered back`() {
         val lib = library(show("1", "Dark", tmdbId = 70523))
         val items = listOf(
-            Tmdb.SearchItem(id = 70523, name = "Dark"),
-            Tmdb.SearchItem(id = 1399, name = "Something else"),
+            Tmdb.SearchItem(id = 70523, seriesName = "Dark"),
+            Tmdb.SearchItem(id = 1399, seriesName = "Something else"),
         )
         val left = Suggest.unseen(lib, items)
 

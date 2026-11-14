@@ -51,6 +51,7 @@ import net.shehane.watching.data.LibraryStore
 import net.shehane.watching.model.Library
 import net.shehane.watching.model.Position
 import net.shehane.watching.model.Show
+import net.shehane.watching.model.spellRuntime
 import net.shehane.watching.ui.theme.Clip
 import net.shehane.watching.ui.theme.Ink
 import net.shehane.watching.ui.theme.Type
@@ -275,6 +276,9 @@ fun ShowScreen(
                         .border(1.dp, Ink.Line, RoundedCornerShape(16.dp))
                         .padding(horizontal = 14.dp, vertical = 13.dp),
                 ) {
+                    if (show.isMovie) {
+                        MovieRow(show, onFinish, onReactivate)
+                    } else {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         SquareButton(onClick = { onStep(-1) }) { Draw.Minus(16.dp) }
                         Column(
@@ -391,9 +395,12 @@ fun ShowScreen(
                             height = 34.dp,
                         )
                     }
+                    }
                     VGap(8.dp)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        val counts = listOfNotNull(
+                        // A film's one season and one episode are an artefact of
+                        // storing both kinds in one record. Nobody needs reading.
+                        val counts = if (show.isMovie) "" else listOfNotNull(
                             show.seasonCount?.let { "$it season" + if (it == 1) "" else "s" },
                             show.episodeCount?.let { "$it episode" + if (it == 1) "" else "s" },
                         ).joinToString(" · ")
@@ -403,7 +410,14 @@ fun ShowScreen(
                         // Tappable, because TMDB is sometimes wrong and the couch's
                         // time estimates are only as good as this number.
                         BasicText(
-                            show.runtimeMinutes?.let { "${it}m an episode" } ?: "length unknown",
+                            // The film already prints its length above in big
+                            // numerals, so this is only the way in to changing it.
+                            when {
+                                show.isMovie && show.runtimeMinutes != null -> "change the length"
+                                show.isMovie -> "set how long it is"
+                                show.runtimeMinutes != null -> "${show.runtimeMinutes}m an episode"
+                                else -> "length unknown"
+                            },
                             style = Type.Meta.copy(color = Ink.Amber),
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
@@ -429,7 +443,7 @@ fun ShowScreen(
                         }
                         VGap(8.dp)
                         Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                            for (minutes in listOf(22, 30, 45, 60)) {
+                            for (minutes in if (show.isMovie) listOf(90, 100, 120, 150) else listOf(22, 30, 45, 60)) {
                                 PillButton(
                                     "${minutes}m",
                                     { onSetRuntime(minutes); editingRuntime = false },
@@ -729,6 +743,41 @@ fun ShowScreen(
                 }
             }
         }
+    }
+}
+
+/**
+ * A film in the place a series keeps its position.
+ *
+ * There is no episode to step through and no season to finish, so the two
+ * questions that are left are how long it is and whether it has been watched.
+ * The length is drawn big because that is what the card outside shows too, and
+ * because it is the thing you are deciding on at eight o'clock.
+ */
+@Composable
+private fun MovieRow(show: Show, onFinish: () -> Unit, onReactivate: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            BasicText(
+                show.runtimeMinutes?.takeIf { it > 0 }?.let(::spellRuntime) ?: "Film",
+                style = Type.Numeral,
+            )
+            VGap(2.dp)
+            BasicText(
+                when {
+                    show.isFinished -> "watched ${Clock.ago(show.lastWatchedAt ?: show.addedAt)}"
+                    show.isWishlist -> "not started"
+                    else -> "one sitting"
+                },
+                style = Type.Meta,
+            )
+        }
+        PillButton(
+            text = if (show.isFinished) "Watched" else "Watched it",
+            onClick = if (show.isFinished) onReactivate else onFinish,
+            height = 34.dp,
+            tint = if (show.isFinished) Ink.Muted else Ink.Amber,
+        )
     }
 }
 

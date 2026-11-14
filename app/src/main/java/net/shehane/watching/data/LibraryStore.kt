@@ -125,6 +125,7 @@ class LibraryStore(private val context: Context) {
     fun addShow(
         title: String,
         tmdbId: Int? = null,
+        medium: String = Show.MEDIUM_TV,
         year: Int? = null,
         posterPath: String? = null,
         wikipediaUrl: String? = null,
@@ -145,6 +146,7 @@ class LibraryStore(private val context: Context) {
                 shows = lib.shows + Show(
                     id = id,
                     tmdbId = tmdbId,
+                    medium = medium,
                     title = title,
                     year = year,
                     posterPath = posterPath,
@@ -178,8 +180,9 @@ class LibraryStore(private val context: Context) {
         show.copy(position = show.position.copy(episode = e), lastWatchedAt = Clock.now())
     }
 
-    /** For the weeks you only open this once a season. */
+    /** For the weeks you only open this once a season. Never called for a film. */
     fun finishSeason(id: String) = updateShow(id) { show ->
+        if (show.isMovie) return@updateShow show
         // Episode 0 of the next season. Episode 1 would claim you had already
         // watched the opener of a season you have not started.
         show.copy(

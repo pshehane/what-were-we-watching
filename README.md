@@ -4,7 +4,7 @@ An Android app for one household. It answers one question quickly: **who is on t
 
 Tap the people who are sitting down. The list re-sorts into shows everyone seated is part-way through, then shows only some of them are on. Every card says which streaming service to open and which profile to pick.
 
-> **Status:** versions 1.0 and 2.0 are complete. Suggestions (3.0) are built; the guided first-run setup is not. The app runs on several Android phones, and 141 unit tests pass.
+> **Status:** versions 1.0 and 2.0 are complete. Suggestions (3.0) are built; the guided first-run setup is not. The app runs on several Android phones, and 154 unit tests pass.
 
 ---
 
@@ -16,6 +16,14 @@ Tap the people who are sitting down. The list re-sorts into shows everyone seate
 - **How long have we got?** Set a length of time (30 minutes to 3 hours) or a bedtime. Each card then says how many episodes fit and when they would end. The last episode may run up to 10 minutes past the limit and still count.
 - **Track by episode.** Tap `+1` on a card.
 - **Two ways to demote.** Swipe left a short way to mark a show *not in the mood*. It shrinks and comes back by itself after two weeks. Swipe further to *shelve* it until you undo it.
+
+### Movies
+
+Films sit in the same list as series. Search finds both, and a result says which it is before you tap it.
+
+A film has no position to track, so its card shows how long it runs where a series shows `S2 · E5`. That is also how you tell them apart at a glance. The `+1` button on a series card is a tick on a film's, because watching a film once finishes it.
+
+The time budget counts a film as one sitting: a three-hour evening fits four episodes of a 45-minute series, or one 116-minute film.
 
 ### Adding a show
 
@@ -131,7 +139,7 @@ Plain Gradle also works:
 .\gradlew.bat :app:testDebugUnitTest
 ```
 
-141 tests in 11 files. They cover the couch match rule, the two-phone merge, the CSV, starter-file seeding, suggestions, the recap cut-off, recap fallback order, saved recaps, the share message, positions, the time budget, filling in missing details, and reading Gemini responses. All of it is pure logic, so no device is needed.
+154 tests in 12 files. They cover the couch match rule, the two-phone merge, the CSV, starter-file seeding, suggestions, the recap cut-off, recap fallback order, saved recaps, movies, the share message, positions, the time budget, filling in missing details, and reading Gemini responses. All of it is pure logic, so no device is needed.
 
 ## Recaps
 
@@ -165,18 +173,22 @@ One JSON file is the record. Every entry has its own `updatedAt`, so two phones 
                   "watchedWith": ["ana", "ben"],
                   "position": { "season": 2, "episode": 4 },
                   "seasonCount": 2, "episodeCount": 19, "runtimeMinutes": 52,
-                  "state": "finished", "liked": true } ],
+                  "state": "finished", "liked": true },
+                { "title": "Arrival", "medium": "movie", "runtimeMinutes": 116,
+                  "state": "wishlist" } ],
   "recaps":   [ { "showId": "…", "upTo": "S2 E5", "source": "cloud",
                   "text": "- The story so far…" } ]
 }
 ```
 
-- `position` is the last episode watched. Episode `0` means none of that season yet.
+- `medium` is `"tv"` or `"movie"`. It is absent on records written before movies existed, and absent means `"tv"`.
+- `position` is the last episode watched. Episode `0` means none of that season yet. It is ignored for a film.
+- `runtimeMinutes` is one episode for a series, and the whole thing for a film.
 - `liked` is `true`, `false`, or absent. Absent means nobody has said.
 - `recaps` holds at most one saved recap per show. `upTo` is the episode it stops before. The newer copy wins in a merge, and a recap is removed with its show.
 - `homeCountry` and `summaryMode` are taken from whichever copy was changed most recently.
 
-The CSV is rewritten from the JSON on every change, one row per show, with plain `YYYY-MM-DD` dates. It is never read back.
+The CSV is rewritten from the JSON on every change, one row per show, with plain `YYYY-MM-DD` dates. Its `Kind` column says `series` or `movie`, and a film's season and episode columns are blank. It is never read back.
 
 **When it syncs with Drive:** when the app starts or comes back to the foreground, 4 seconds after any change, and when you tap *Sync now*.
 
@@ -199,7 +211,7 @@ app/src/main/java/net/shehane/watching/
   data/TimeLeft.kt            the time budget arithmetic
   data/Share.kt               the share sheet message
   data/Csv.kt                 the readable copy
-  data/Tmdb.kt                search, detail, seasons, cast, providers, Wikipedia
+  data/Tmdb.kt                search (both catalogs), detail, seasons, cast, providers, Wikipedia
   data/DriveSync.kt           Google Sign-In and the Drive round trip
   data/Starter.kt             first-run household seeding
   ui/                         the screens, drawn to match the mockups

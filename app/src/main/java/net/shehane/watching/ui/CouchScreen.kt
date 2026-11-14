@@ -292,6 +292,24 @@ private fun CouchBar(library: Library, seated: Set<String>, onToggle: (String) -
 private fun FitLine(show: Show, fits: TimeLeft.Fits, now: LocalTime) {
     val each = TimeLeft.episodeLength(show)
 
+    if (show.isMovie) {
+        val length = TimeLeft.spell(each)
+        BasicText(
+            text = if (fits.fitsNothing) {
+                "Too long for tonight, it runs $length"
+            } else {
+                "Fits — $length, done by ${TimeLeft.endsAt(now, each)}"
+            },
+            style = Type.Meta.copy(
+                color = if (fits.fitsNothing) Ink.Faint else Ink.Cool,
+                fontSize = 11.sp,
+            ),
+            maxLines = 1,
+            overflow = Clip,
+        )
+        return
+    }
+
     val text = when {
         fits.fitsNothing -> "Not even one, at about ${each}m each"
         else -> buildString {
@@ -485,7 +503,7 @@ private fun FullCard(
             VGap(5.dp)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 BasicText(
-                    show.position.toString(),
+                    show.marker,
                     style = Type.BodyTight.copy(
                         color = Ink.Amber,
                         fontSize = 12.5.sp,
@@ -511,13 +529,19 @@ private fun FullCard(
         }
         HGap(8.dp)
         RoundButton(onClick = onBump) {
-            BasicText(
-                "+1",
-                style = Type.BodyTight.copy(
-                    color = Ink.Amber,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                ),
-            )
+            // A film is watched, not advanced. Same button, and the shape says
+            // which of the two it is about to do.
+            if (show.isMovie) {
+                Draw.Check(17.dp, Ink.Amber)
+            } else {
+                BasicText(
+                    "+1",
+                    style = Type.BodyTight.copy(
+                        color = Ink.Amber,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    ),
+                )
+            }
         }
     }
 }
@@ -555,7 +579,7 @@ private fun PartialCard(
             )
             VGap(4.dp)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                BasicText(show.position.short, style = Type.Meta.copy(fontSize = 11.5.sp, color = Ink.Muted))
+                BasicText(show.markerShort, style = Type.Meta.copy(fontSize = 11.5.sp, color = Ink.Muted))
                 HGap(7.dp)
                 ServiceProfileBadge(
                     library.serviceOrNull(show.serviceId),
@@ -634,7 +658,11 @@ private fun AbandonedRow(library: Library, show: Show, onOpen: () -> Unit) {
             BasicText(show.title, style = Type.ShowTitleXs.copy(fontSize = 14.sp, color = Ink.Text), maxLines = 1, overflow = Clip)
             HGap(10.dp)
             BasicText(
-                if (show.isFinished) "finished" else "stopped ${show.position.short}",
+                when {
+                    show.isFinished -> "finished"
+                    show.isMovie -> "stopped part-way"
+                    else -> "stopped ${show.position.short}"
+                },
                 style = Type.Meta,
             )
             Spacer(Modifier.weight(1f))

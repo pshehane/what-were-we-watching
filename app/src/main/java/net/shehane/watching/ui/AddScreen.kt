@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.shehane.watching.model.Library
 import net.shehane.watching.model.Show
+import net.shehane.watching.model.spellRuntime
 import net.shehane.watching.data.Tmdb
 import net.shehane.watching.ui.theme.Clip
 import net.shehane.watching.ui.theme.Ink
@@ -383,9 +384,11 @@ private fun ResultRow(
                 )
                 VGap(4.dp)
                 BasicText(
-                    listOfNotNull(item.year?.toString(), item.overview?.takeIf { it.isNotBlank() }?.let { "TV series" })
-                        .joinToString(" · ")
-                        .ifBlank { "TV series" },
+                    // Which catalog it came from, every time. A film and a series
+                    // of the same name is common enough that the year alone does
+                    // not tell you which row you are about to tap.
+                    listOfNotNull(item.year?.toString(), if (item.isMovie) "Film" else "TV series")
+                        .joinToString(" · "),
                     style = Type.Meta.copy(fontSize = 11.5.sp),
                     maxLines = 1,
                     overflow = Clip,
@@ -408,9 +411,9 @@ private fun ResultRow(
                         HGap(7.dp)
                         BasicText(
                             when {
-                                existing.isAbandoned -> "On your shelf — stopped ${existing.position.short}"
-                                existing.isSnoozed -> "Snoozed — ${existing.position.short}"
-                                else -> "Already tracked — ${existing.position.short}"
+                                existing.isAbandoned -> "On your shelf — stopped ${existing.markerShort}"
+                                existing.isSnoozed -> "Snoozed — ${existing.markerShort}"
+                                else -> "Already tracked — ${existing.markerShort}"
                             },
                             style = Type.Meta.copy(
                                 color = if (existing.isAbandoned) Ink.Rust else Ink.Amber,
@@ -499,11 +502,16 @@ fun AddSheet(
                     BasicText(
                         buildString {
                             draft.detail?.year?.let { append(it) } ?: draft.result.year?.let { append(it) }
-                            draft.detail?.episodeCount?.let {
+                            if (draft.medium == Show.MEDIUM_MOVIE) {
                                 if (isNotEmpty()) append(" · ")
-                                append("$it episodes")
+                                append("Film")
+                            } else {
+                                draft.detail?.episodeCount?.let {
+                                    if (isNotEmpty()) append(" · ")
+                                    append("$it episodes")
+                                }
+                                if (isEmpty()) append("TV series")
                             }
-                            if (isEmpty()) append("TV series")
                         },
                         style = Type.BodyTight,
                     )
@@ -647,6 +655,33 @@ fun AddSheet(
             VGap(15.dp)
 
             // --- where to start ---
+            // A film has nowhere to start but the beginning, so the stepper is
+            // replaced by the one fact worth knowing before tonight: its length.
+            if (draft.medium == Show.MEDIUM_MOVIE) {
+                SectionHeader("HOW LONG", Ink.Faint)
+                VGap(8.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(46.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(Ink.SurfaceLift),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val minutes = draft.detail?.sittingMinutes
+                    BasicText(
+                        text = when {
+                            minutes != null -> spellRuntime(minutes)
+                            draft.loading -> "…"
+                            else -> "length unknown"
+                        },
+                        style = Type.ShowTitle.copy(fontSize = 20.sp),
+                    )
+                    HGap(9.dp)
+                    BasicText("one sitting", style = Type.Meta)
+                }
+            } else {
             SectionHeader("STARTING AT", Ink.Faint)
             VGap(8.dp)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -684,6 +719,7 @@ fun AddSheet(
                 PillButton("Season +", { onUpdate { d ->
                     d.copy(position = d.position.copy(season = d.position.season + 1, episode = 1))
                 } }, height = 38.dp, tint = Ink.Muted)
+            }
             }
 
                 VGap(18.dp)

@@ -52,6 +52,8 @@ data class Note(
 /** What the add sheet is holding while you decide. */
 data class Draft(
     val result: Tmdb.SearchItem,
+    /** Copied off the search row, so the sheet and the saved record agree. */
+    val medium: String = result.medium,
     val serviceId: String?,
     val profileId: String?,
     val watchedWith: List<String>,
@@ -242,8 +244,23 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     // ----------------------------------------------------------------- shows
 
+    /**
+     * The +1 on a couch card.
+     *
+     * A film has no next episode, so watching it is the whole of it and the
+     * same button finishes it. The card draws a tick rather than +1 to say so.
+     */
     fun bump(showId: String) {
-        store.bumpEpisode(showId)
+        val show = library.value.showOrNull(showId)
+        if (show != null && show.isMovie) {
+            store.finish(showId)
+            say("${show.title} — watched.") {
+                store.restoreShow(show)
+                pushSoon()
+            }
+        } else {
+            store.bumpEpisode(showId)
+        }
         pushSoon()
     }
 
@@ -445,7 +462,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             // The cast is worth a call for either model now: the on-device prompt
             // API takes the same instruction the cloud one does.
             val characters = runCatching {
-                show.tmdbId?.let { Tmdb.mainCast(it, show.episodeCount) }?.mapNotNull { it.character }
+                show.tmdbId?.let { Tmdb.mainCast(it, show.episodeCount, medium = show.medium) }
+                    ?.mapNotNull { it.character }
                     ?: emptyList()
             }.getOrDefault(emptyList())
 
@@ -603,19 +621,26 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val tmdbId = show.tmdbId ?: return
 
         if (show.seasonCount == null || show.runtimeMinutes == null) {
-            val detail = runCatching { Tmdb.detail(tmdbId) }.getOrNull()
+            val detail = runCatching { Tmdb.detail(tmdbId, show.medium) }.getOrNull()
             if (detail != null) {
                 // TMDB's show-level runtime is empty for most current shows.
                 // The episodes in a season almost always have one, so use those.
+                // A film publishes its length outright and has no seasons to ask.
                 val runtime = show.runtimeMinutes
-                    ?: detail.runTimes.firstOrNull { it > 0 }
-                    ?: runtimeFromSeason(tmdbId, show.position.season, show.seasonCount ?: detail.seasonCount)
-                store.fillDetails(show.id, detail.seasonCount, detail.episodeCount, runtime)
+                    ?: detail.sittingMinutes
+                    ?: if (show.isMovie) null
+                    else runtimeFromSeason(tmdbId, show.position.season, show.seasonCount ?: detail.seasonCount)
+                store.fillDetails(
+                    show.id,
+                    if (show.isMovie) 1 else detail.seasonCount,
+                    if (show.isMovie) 1 else detail.episodeCount,
+                    runtime,
+                )
             }
         }
 
         if (show.wikipediaUrl == null) {
-            runCatching { Tmdb.wikipediaUrl(tmdbId, show.title, show.year) }
+            runCatching { Tmdb.wikipediaUrl(tmdbId, show.title, show.year, show.medium) }
                 .onSuccess { url -> url?.let { store.setWikipediaUrl(show.id, it) } }
         }
     }
@@ -743,7 +768,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             for (show in missing) {
                 val id = show.tmdbId ?: continue
-                runCatching { Tmdb.availabilityEverywhere(id) }
+                runCatching { Tmdb.availabilityEverywhere(id, show.medium) }
                     // Merged one at a time against the current value, not a snapshot
                     // taken before the loop, so a concurrent load cannot drop entries.
                     .onSuccess { _availability.value = _availability.value + (show.id to it) }
@@ -757,14 +782,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      * list.
      */
     fun loadGuesses() {
-        val seed = suggestions().seed?.tmdbId ?: run { _guesses.value = emptyList(); return }
+        val seedShow = suggestions().seed
+        val seed = seedShow?.tmdbId ?: run { _guesses.value = emptyList(); return }
         if (seed == guessedFrom && _guesses.value.isNotEmpty()) return
 
         guessJob?.cancel()
         guessedFrom = seed
         guessJob = viewModelScope.launch {
             _guessLoading.value = true
-            runCatching { Tmdb.recommendations(seed) }
+            runCatching { Tmdb.recommendations(seed, seedShow.medium) }
                 .onSuccess { _guesses.value = Suggest.unseen(library.value, it).take(12) }
                 .onFailure { _guesses.value = emptyList() }
             _guessLoading.value = false
@@ -780,6 +806,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val id = store.addShow(
             title = item.name,
             tmdbId = item.id,
+            medium = item.medium,
             year = item.year,
             posterPath = item.posterPath,
             overview = item.overview,
@@ -868,6 +895,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val id = store.addShow(
             title = item.name,
             tmdbId = item.id,
+            medium = item.medium,
             year = item.year,
             posterPath = item.posterPath,
             overview = item.overview,
@@ -912,7 +940,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val lib = library.value
             val ids = runCatching { Tmdb.providerIdsFor(lib.homeCountry, lib.services) }
                 .getOrDefault(emptyList())
-            runCatching { Tmdb.popularIn(lib.homeCountry, ids) }
+            runCatching { Tmdb.popularBothIn(lib.homeCountry, ids) }
                 .onSuccess { _catchUp.value = Suggest.unseen(library.value, it) }
                 .onFailure { _catchUp.value = emptyList() }
             _catchUpLoading.value = false
@@ -985,12 +1013,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
             for (show in missing) {
                 val id = show.tmdbId ?: continue
-                runCatching { Tmdb.availabilityEverywhere(id) }
+                runCatching { Tmdb.availabilityEverywhere(id, show.medium) }
                     .onSuccess { _availability.value = _availability.value + (show.id to it) }
             }
 
             _popularHere.value = emptyList()
-            runCatching { Tmdb.popularIn(region) }
+            runCatching { Tmdb.popularBothIn(region) }
                 .onSuccess { _popularHere.value = it.take(12) }
 
             _travelLoading.value = false
@@ -1068,15 +1096,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      */
     private fun lookUpRegions(results: List<Tmdb.SearchItem>) {
         lookupJob?.cancel()
-        val wanted = results.take(10).map { it.id }
-            .filter { _searchAvailability.value[it] == null }
+        val wanted = results.take(10).filter { _searchAvailability.value[it.id] == null }
         if (wanted.isEmpty()) return
 
         lookupJob = viewModelScope.launch {
             val found = _searchAvailability.value.toMutableMap()
-            for (id in wanted) {
-                runCatching { Tmdb.availabilityEverywhere(id) }
-                    .onSuccess { found[id] = it; _searchAvailability.value = found.toMap() }
+            for (item in wanted) {
+                runCatching { Tmdb.availabilityEverywhere(item.id, item.medium) }
+                    .onSuccess { found[item.id] = it; _searchAvailability.value = found.toMap() }
             }
         }
     }
@@ -1109,10 +1136,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             loading = true,
         )
         viewModelScope.launch {
-            val detail = runCatching { Tmdb.detail(item.id) }.getOrNull()
-            val providers = runCatching { Tmdb.providerNames(item.id) }.getOrDefault(emptyList())
+            val medium = item.medium
+            val detail = runCatching { Tmdb.detail(item.id, medium) }.getOrNull()
+            val providers = runCatching {
+                Tmdb.providerNames(item.id, lib.homeCountry, medium)
+            }.getOrDefault(emptyList())
             val service = Tmdb.matchService(lib.services, providers)
-            val wiki = runCatching { Tmdb.wikipediaUrl(item.id, item.name, item.year) }.getOrNull()
+            val wiki = runCatching {
+                Tmdb.wikipediaUrl(item.id, item.name, item.year, medium)
+            }.getOrNull()
 
             _draft.value = _draft.value?.copy(
                 detail = detail,
@@ -1135,20 +1167,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** One tap from here to a tracked show. */
     fun commitAdd(toWishlist: Boolean = false) {
         val d = _draft.value ?: return
+        val movie = d.medium == Show.MEDIUM_MOVIE
         val id = store.addShow(
             title = d.result.name,
             tmdbId = d.result.id,
+            medium = d.medium,
             year = d.detail?.year ?: d.result.year,
             posterPath = d.detail?.posterPath ?: d.result.posterPath,
             wikipediaUrl = d.wikipediaUrl,
-            seasonCount = d.detail?.seasonCount,
-            episodeCount = d.detail?.episodeCount,
-            runtimeMinutes = d.detail?.runTimes?.firstOrNull(),
+            // A film has one of each, and saying so keeps every count on the
+            // screen true rather than blank.
+            seasonCount = if (movie) 1 else d.detail?.seasonCount,
+            episodeCount = if (movie) 1 else d.detail?.episodeCount,
+            runtimeMinutes = d.detail?.sittingMinutes,
             overview = d.detail?.overview ?: d.result.overview,
             serviceId = d.serviceId,
             profileId = d.profileId,
             watchedWith = d.watchedWith,
-            position = d.position,
+            position = if (movie) Position(1, 0) else d.position,
             state = if (toWishlist) Show.STATE_WISHLIST else Show.STATE_ACTIVE,
         )
         _draft.value = null

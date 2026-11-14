@@ -161,9 +161,11 @@ Plain Gradle also works:
 
 Every choice only ever sees text from episodes before your position. The recap cannot include anything from the next episode onward.
 
+**The cloud model asks first.** Choosing it does not mean anything is sent yet. The first time a particular recap would go to Gemini, the sheet asks, naming what the request contains: the title, how many character names, and how many episode synopses. Say no and it tries the phone's own model instead, and shows the synopses if that cannot do it either. Nothing leaves the phone before that answer.
+
 **Recaps are saved.** A written recap is stored in the library, one per show, and syncs through Drive with everything else. Asking again for the same stopping point, on the same phone or another one, shows the saved recap and sends nothing. A cloud recap is reused whichever writer is chosen. A recap written on the phone is only reused while *This phone* is chosen. *Write it again* under a saved recap asks the model again and replaces it.
 
-**On-device support varies by phone and by AICore version.** In testing on three phones in September 2026, none produced an on-device recap. One phone was not a supported device. One did not offer the feature to third-party apps. One reported the feature as available and then failed when generating. The app handles each of these and shows the synopses instead.
+**On-device support varies by phone and by AICore version.** Of three phones tested in September 2026, none produced an on-device recap: one was not a supported device, one did not offer the feature to third-party apps, and one reported the feature as available and then failed on every request. In November 2026, after an AICore update, that third phone started working and writes recaps with the prompt API. The app handles all of these and falls back to the synopses.
 
 To check a phone without this app, build `tools/aicore-check`. It is a one-screen app that makes the smallest possible ML Kit GenAI calls and copies a report with the error codes. See [its README](tools/aicore-check/README.md).
 

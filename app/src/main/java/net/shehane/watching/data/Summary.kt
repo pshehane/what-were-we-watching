@@ -36,6 +36,8 @@ object Summary {
         NO_DEVICE_MODEL,
         /** The phone can do it, but is still fetching the model. Try again later. */
         DEVICE_DOWNLOADING,
+        /** Asked whether to send it to the cloud, and the answer was no. */
+        DECLINED,
         FAILED,
     }
 

@@ -81,6 +81,8 @@ fun ShowScreen(
     seasonsLoading: Boolean,
     onNeedSeasons: (List<Int>) -> Unit,
     recapped: MainViewModel.Recapped?,
+    cloudAsk: MainViewModel.CloudAsk?,
+    onAnswerCloud: (Boolean) -> Unit,
     onNeedRecap: (Recap.CatchUp, String) -> Unit,
     onRewriteRecap: (Recap.CatchUp, String) -> Unit,
     onCloseRecap: () -> Unit,
@@ -736,7 +738,9 @@ fun ShowScreen(
                         onDismiss = { asking = null; onCloseRecap() },
                         bottomInset = insets,
                     ) {
-                        CatchUpBody(recap, seasonsLoading, label, recapped) {
+                        CatchUpBody(
+                            recap, seasonsLoading, label, recapped, cloudAsk, onAnswerCloud,
+                        ) {
                             onRewriteRecap(recap, label)
                         }
                     }
@@ -782,6 +786,69 @@ private fun MovieRow(show: Show, onFinish: () -> Unit, onReactivate: () -> Unit)
 }
 
 /**
+ * The question asked before anything leaves the phone.
+ *
+ * It names what the request contains rather than saying "data", because the
+ * answer only means something if the question is specific. Saying no is not a
+ * failure: the phone's own model is tried next, and the synopses are below
+ * either way.
+ */
+@Composable
+private fun CloudConsent(ask: MainViewModel.CloudAsk, onAnswer: (Boolean) -> Unit) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .border(1.dp, Ink.Amber.copy(alpha = 0.55f), RoundedCornerShape(14.dp))
+            .padding(14.dp),
+    ) {
+        BasicText("Send this to Gemini?", style = Type.ShowTitleSm)
+        VGap(8.dp)
+        BasicText(
+            buildString {
+                append("To write the recap, this sends the title ")
+                append(ask.title)
+                if (ask.characters > 0) {
+                    append(", ")
+                    append(ask.characters)
+                    append(if (ask.characters == 1) " character name" else " character names")
+                }
+                append(" and the synopses of ")
+                append(ask.episodes)
+                append(if (ask.episodes == 1) " episode" else " episodes")
+                append(" you have already watched, up to ")
+                append(ask.upTo)
+                append(". Nothing about your household goes with it.")
+            },
+            style = Type.Body.copy(color = Ink.Muted),
+        )
+        VGap(12.dp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PillButton(
+                "Send it",
+                { onAnswer(true) },
+                Modifier.weight(1f),
+                filled = true,
+                height = 42.dp,
+            )
+            PillButton(
+                "No, keep it here",
+                { onAnswer(false) },
+                Modifier.weight(1f),
+                tint = Ink.Muted,
+                height = 42.dp,
+            )
+        }
+        VGap(8.dp)
+        BasicText(
+            "Saying no tries this phone instead, and shows the synopses if it cannot.",
+            style = Type.Meta,
+        )
+    }
+    VGap(16.dp)
+}
+
+/**
  * The written recap, above the synopses it was written from.
  *
  * The synopses stay either way. A model can be wrong, and the thing it was built
@@ -808,6 +875,7 @@ private fun Summarised(recapped: MainViewModel.Recapped?, onRewrite: () -> Unit)
         Summary.Fallback.DEVICE_DOWNLOADING ->
             "This phone is still fetching its model. The synopses are below in the " +
                 "meantime, and the next recap will be written here."
+        Summary.Fallback.DECLINED -> "You said not to send it this time."
         Summary.Fallback.FAILED -> "The summariser did not answer."
         null -> null
     }
@@ -981,6 +1049,8 @@ private fun CatchUpBody(
     loading: Boolean,
     position: String,
     recapped: MainViewModel.Recapped?,
+    cloudAsk: MainViewModel.CloudAsk?,
+    onAnswerCloud: (Boolean) -> Unit,
     onRewrite: () -> Unit,
 ) {
     if (recap.isEmpty) {
@@ -989,7 +1059,12 @@ private fun CatchUpBody(
     }
 
     Column {
-        Summarised(recapped, onRewrite)
+        if (cloudAsk != null) {
+            CloudConsent(cloudAsk, onAnswerCloud)
+        }
+        // Nothing is being written while the question is still up, so the
+        // "Writing it" line waits until it has been answered.
+        Summarised(if (cloudAsk != null) null else recapped, onRewrite)
         for (entry in recap.recent) {
             BasicText("S${entry.season} E${entry.episode} · ${entry.title}", style = Type.ShowTitleSm)
             VGap(5.dp)

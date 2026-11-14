@@ -88,6 +88,7 @@ private fun App() {
     val castSearching by vm.castSearching.collectAsStateWithLifecycle()
     val castPicked by vm.castPicked.collectAsStateWithLifecycle()
     val castPanes by vm.castPanes.collectAsStateWithLifecycle()
+    val cloudAsk by vm.cloudAsk.collectAsStateWithLifecycle()
     val searchError by vm.searchError.collectAsStateWithLifecycle()
     val syncState by vm.syncState.collectAsStateWithLifecycle()
     val toast by vm.toast.collectAsStateWithLifecycle()
@@ -252,6 +253,8 @@ private fun App() {
                         seasonsLoading = seasonsLoading,
                         onNeedSeasons = { vm.loadSeasons(show, it) },
                         recapped = recapped,
+                        cloudAsk = cloudAsk,
+                        onAnswerCloud = vm::answerCloud,
                         onNeedRecap = { recap, upTo -> vm.summarise(show, recap, upTo) },
                         onRewriteRecap = { recap, upTo -> vm.summarise(show, recap, upTo, fresh = true) },
                         onCloseRecap = vm::clearRecap,

@@ -6,6 +6,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -409,6 +410,47 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _recapped = MutableStateFlow<Recapped?>(null)
     val recapped: StateFlow<Recapped?> = _recapped.asStateFlow()
 
+    /**
+     * What is about to be sent to the cloud, while it waits to be allowed.
+     *
+     * Null at every other moment. Nothing leaves the phone until this is
+     * answered, so the question has to carry enough for the answer to mean
+     * something: which show, how far in, and what the request contains.
+     */
+    data class CloudAsk(
+        val title: String,
+        val upTo: String,
+        val episodes: Int,
+        val characters: Int,
+    )
+
+    private val _cloudAsk = MutableStateFlow<CloudAsk?>(null)
+    val cloudAsk: StateFlow<CloudAsk?> = _cloudAsk.asStateFlow()
+
+    private var cloudAnswer: CompletableDeferred<Boolean>? = null
+
+    /**
+     * Puts the question up and suspends until it is answered.
+     *
+     * The recap job is already a coroutine, so waiting here keeps the whole
+     * decision in one readable sequence rather than splitting the flow in two.
+     */
+    private suspend fun allowedToSend(ask: CloudAsk): Boolean {
+        val answer = CompletableDeferred<Boolean>()
+        cloudAnswer = answer
+        _cloudAsk.value = ask
+        return try {
+            answer.await()
+        } finally {
+            _cloudAsk.value = null
+            cloudAnswer = null
+        }
+    }
+
+    fun answerCloud(allowed: Boolean) {
+        cloudAnswer?.complete(allowed)
+    }
+
     private var recapJob: Job? = null
 
     /** Null until asked once, because the check itself costs a round trip to AICore. */
@@ -431,7 +473,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun clearRecap() {
+        // Cancelling the job leaves whatever it was waiting on unanswered, so the
+        // question comes down with it rather than hanging over the next screen.
         recapJob?.cancel()
+        cloudAnswer?.cancel()
+        cloudAnswer = null
+        _cloudAsk.value = null
         _recapped.value = null
     }
 
@@ -513,7 +560,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             )
 
             when (source) {
-                Summary.Source.CLOUD ->
+                Summary.Source.CLOUD -> {
+                    // Nothing has left the phone yet. This is the last point at
+                    // which it still has not, so the question goes here.
+                    val allowed = allowedToSend(
+                        CloudAsk(
+                            title = show.title,
+                            upTo = upTo,
+                            episodes = recap.recent.size,
+                            characters = characters.size,
+                        )
+                    )
+                    if (!allowed) {
+                        runOnDevice(
+                            show, upTo, instructionFor, body, characters.size,
+                            Summary.Fallback.DECLINED,
+                        )
+                        return@launch
+                    }
                     runCatching { Gemini.summarise(instruction) }
                         .onSuccess {
                             _recapped.value =
@@ -524,6 +588,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                             android.util.Log.w("Watching.Summary", "cloud summarise failed", it)
                             runOnDevice(show, upTo, instructionFor, body, characters.size, Summary.Fallback.FAILED)
                         }
+                }
 
                 Summary.Source.DEVICE -> runOnDevice(show, upTo, instructionFor, body, characters.size, why)
                 Summary.Source.RAW -> _recapped.value = Recapped(null, Summary.Source.RAW, why)
@@ -596,7 +661,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             }
             .onFailure {
                 android.util.Log.w("Watching.Summary", "on-device generate failed", it)
-                _recapped.value = Recapped(null, Summary.Source.RAW, Summary.Fallback.FAILED)
+                // Saying no is the more useful reason to show when the phone then
+                // fails too: it is the part of this the reader decided.
+                _recapped.value = Recapped(
+                    null,
+                    Summary.Source.RAW,
+                    if (why == Summary.Fallback.DECLINED) why else Summary.Fallback.FAILED,
+                )
             }
     }
 
